@@ -1,0 +1,34 @@
+{
+  "collectionName": "components_user_disability_cards",
+  "info": {
+    "displayName": "Disability Card"
+  },
+  "options": {},
+  "attributes": {
+    "file": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files"
+      ]
+    },
+    "card_status": {
+      "type": "enumeration",
+      "default": "pending",
+      "enum": [
+        "active",
+        "expired",
+        "pending",
+        "rejected"
+      ]
+    },
+    "issuing_card": {
+      "type": "string"
+    },
+    "expiry_date": {
+      "type": "date"
+    }
+  },
+  "config": {}
+}

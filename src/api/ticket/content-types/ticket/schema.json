@@ -1,0 +1,69 @@
+{
+  "kind": "collectionType",
+  "collectionName": "tickets",
+  "info": {
+    "singularName": "ticket",
+    "pluralName": "tickets",
+    "displayName": "Ticket"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "price": {
+      "type": "decimal",
+      "required": true
+    },
+    "format": {
+      "type": "enumeration",
+      "enum": [
+        "digital",
+        "physical",
+        "mobile"
+      ]
+    },
+    "zone": {
+      "type": "string"
+    },
+    "seat": {
+      "type": "string"
+    },
+    "refund_policy": {
+      "type": "blocks"
+    },
+    "ticket_status": {
+      "type": "enumeration",
+      "default": "available",
+      "enum": [
+        "available",
+        "reserved",
+        "sold",
+        "cancelled"
+      ]
+    },
+    "companion": {
+      "type": "component",
+      "component": "ticket.companion",
+      "repeatable": false
+    },
+    "event": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::event.event",
+      "mappedBy": "ticket"
+    },
+    "app_user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::app-user.app-user",
+      "mappedBy": "ticket"
+    },
+    "ticket_type": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::ticket-type.ticket-type",
+      "inversedBy": "ticket"
+    }
+  }
+}

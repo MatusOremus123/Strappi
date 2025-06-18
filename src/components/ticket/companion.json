@@ -1,0 +1,27 @@
+{
+  "collectionName": "components_ticket_companions",
+  "info": {
+    "displayName": "Companion"
+  },
+  "options": {},
+  "attributes": {
+    "first_name": {
+      "type": "string",
+      "required": true
+    },
+    "last_name": {
+      "type": "string",
+      "required": true
+    },
+    "companion_status": {
+      "type": "enumeration",
+      "default": "pending",
+      "enum": [
+        "confirmed",
+        "pending",
+        "cancelled"
+      ]
+    }
+  },
+  "config": {}
+}

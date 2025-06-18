@@ -1,0 +1,59 @@
+{
+  "kind": "collectionType",
+  "collectionName": "app_users",
+  "info": {
+    "singularName": "app-user",
+    "pluralName": "app-users",
+    "displayName": "App User"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "first_name": {
+      "type": "string",
+      "required": true
+    },
+    "last_name": {
+      "type": "string",
+      "required": true
+    },
+    "birthday": {
+      "type": "date"
+    },
+    "primary_language": {
+      "type": "string"
+    },
+    "email_address": {
+      "type": "email",
+      "required": true,
+      "unique": true
+    },
+    "phone_number": {
+      "type": "string"
+    },
+    "disability_card": {
+      "type": "component",
+      "component": "user.disability-card",
+      "repeatable": false
+    },
+    "tickets": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::ticket.ticket"
+    },
+    "accessibility_needs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::accessibility-feature.accessibility-feature",
+      "mappedBy": "app_users"
+    },
+    "ticket": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::ticket.ticket",
+      "inversedBy": "app_user"
+    }
+  }
+}

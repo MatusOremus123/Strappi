@@ -1,0 +1,84 @@
+{
+  "kind": "collectionType",
+  "collectionName": "locations",
+  "info": {
+    "singularName": "location",
+    "pluralName": "locations",
+    "displayName": "Location"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "address": {
+      "type": "blocks"
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "website": {
+      "type": "string"
+    },
+    "opening_hours": {
+      "type": "blocks"
+    },
+    "contact_details": {
+      "type": "blocks"
+    },
+    "capacity": {
+      "type": "integer"
+    },
+    "size": {
+      "type": "string"
+    },
+    "max_capacity": {
+      "type": "integer"
+    },
+    "tags": {
+      "type": "json"
+    },
+    "languages": {
+      "type": "json"
+    },
+    "seat_maps": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "images",
+        "files"
+      ]
+    },
+    "media": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "events": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::event.event"
+    },
+    "accessibility_features": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::accessibility-feature.accessibility-feature",
+      "mappedBy": "locations"
+    },
+    "event_location": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::event.event",
+      "mappedBy": "location"
+    }
+  }
+}
