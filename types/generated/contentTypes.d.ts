@@ -480,6 +480,7 @@ export interface ApiAppUserAppUser extends Struct.CollectionTypeSchema {
       'api::app-user.app-user'
     > &
       Schema.Attribute.Private;
+    password: Schema.Attribute.String & Schema.Attribute.Required;
     phone_number: Schema.Attribute.String;
     primary_language: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
@@ -517,7 +518,10 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
       true
     >;
     name: Schema.Attribute.String & Schema.Attribute.Required;
-    organizer: Schema.Attribute.String;
+    organizer: Schema.Attribute.Relation<
+      'oneToOne',
+      'api::organizer.organizer'
+    >;
     publishedAt: Schema.Attribute.DateTime;
     start_time: Schema.Attribute.DateTime & Schema.Attribute.Required;
     ticket: Schema.Attribute.Relation<'oneToOne', 'api::ticket.ticket'>;
@@ -578,6 +582,46 @@ export interface ApiLocationLocation extends Struct.CollectionTypeSchema {
     seat_maps: Schema.Attribute.Media<'images' | 'files', true>;
     size: Schema.Attribute.String;
     tags: Schema.Attribute.JSON;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    website: Schema.Attribute.String;
+  };
+}
+
+export interface ApiOrganizerOrganizer extends Struct.CollectionTypeSchema {
+  collectionName: 'organizers';
+  info: {
+    displayName: 'Organizer';
+    pluralName: 'organizers';
+    singularName: 'organizer';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    address: Schema.Attribute.Blocks;
+    contact_email: Schema.Attribute.Email;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    event: Schema.Attribute.Relation<'oneToOne', 'api::event.event'>;
+    events: Schema.Attribute.Relation<'oneToMany', 'api::event.event'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::organizer.organizer'
+    > &
+      Schema.Attribute.Private;
+    media: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios',
+      true
+    >;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    password: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    type: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1176,6 +1220,7 @@ declare module '@strapi/strapi' {
       'api::app-user.app-user': ApiAppUserAppUser;
       'api::event.event': ApiEventEvent;
       'api::location.location': ApiLocationLocation;
+      'api::organizer.organizer': ApiOrganizerOrganizer;
       'api::ticket-type.ticket-type': ApiTicketTypeTicketType;
       'api::ticket.ticket': ApiTicketTicket;
       'plugin::content-releases.release': PluginContentReleasesRelease;

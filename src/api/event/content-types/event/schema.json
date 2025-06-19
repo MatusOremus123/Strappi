@@ -26,9 +26,6 @@
       "type": "datetime",
       "required": true
     },
-    "organizer": {
-      "type": "string"
-    },
     "event_type": {
       "type": "string"
     },
@@ -68,6 +65,12 @@
       "type": "relation",
       "relation": "oneToOne",
       "target": "api::ticket-type.ticket-type",
+      "inversedBy": "event"
+    },
+    "organizer": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::organizer.organizer",
       "inversedBy": "event"
     }
   }

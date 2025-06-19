@@ -54,6 +54,10 @@
       "relation": "oneToOne",
       "target": "api::ticket.ticket",
       "inversedBy": "app_user"
+    },
+    "password": {
+      "type": "string",
+      "required": true
     }
   }
 }
