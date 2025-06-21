@@ -45,15 +45,12 @@
       "relation": "oneToMany",
       "target": "api::event.event"
     },
-    "event": {
-      "type": "relation",
-      "relation": "oneToOne",
-      "target": "api::event.event",
-      "mappedBy": "organizer"
-    },
     "password": {
       "type": "string",
       "required": true
+    },
+    "contact_Phone": {
+      "type": "string"
     }
   }
 }

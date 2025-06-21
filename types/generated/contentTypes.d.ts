@@ -518,10 +518,7 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
       true
     >;
     name: Schema.Attribute.String & Schema.Attribute.Required;
-    organizer: Schema.Attribute.Relation<
-      'oneToOne',
-      'api::organizer.organizer'
-    >;
+    organizer: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
     start_time: Schema.Attribute.DateTime & Schema.Attribute.Required;
     ticket: Schema.Attribute.Relation<'oneToOne', 'api::ticket.ticket'>;
@@ -602,11 +599,11 @@ export interface ApiOrganizerOrganizer extends Struct.CollectionTypeSchema {
   attributes: {
     address: Schema.Attribute.Blocks;
     contact_email: Schema.Attribute.Email;
+    contact_Phone: Schema.Attribute.String;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Blocks;
-    event: Schema.Attribute.Relation<'oneToOne', 'api::event.event'>;
     events: Schema.Attribute.Relation<'oneToMany', 'api::event.event'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<

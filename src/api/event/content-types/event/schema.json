@@ -68,10 +68,7 @@
       "inversedBy": "event"
     },
     "organizer": {
-      "type": "relation",
-      "relation": "oneToOne",
-      "target": "api::organizer.organizer",
-      "inversedBy": "event"
+      "type": "string"
     }
   }
 }
