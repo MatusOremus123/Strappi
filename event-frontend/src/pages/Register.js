@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 
 const Register = () => {
-  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -80,31 +78,31 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate passwords match
+    
     if (formData.password !== formData.confirmPassword) {
       setMessage({ type: 'error', text: 'Passwords do not match' });
       return;
     }
 
-    // Validate password length
+
     if (formData.password.length < 6) {
       setMessage({ type: 'error', text: 'Password must be at least 6 characters long' });
       return;
     }
 
-    // Validate required fields
+    
     if (!formData.firstName || !formData.lastName) {
       setMessage({ type: 'error', text: 'First name and last name are required' });
       return;
     }
 
-    // Validate business justification for elevated roles
+    
     if (formData.intendedRole !== 'attendee' && !formData.businessJustification.trim()) {
       setMessage({ type: 'error', text: 'Please provide justification for requesting elevated access' });
       return;
     }
 
-    // Validate disability card requirements
+    
     if (formData.hasDisability && !disabilityCardFile) {
       setMessage({ type: 'error', text: 'Please upload your disability card' });
       return;
@@ -114,10 +112,10 @@ const Register = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      // Everyone registers as "Event Attendee" by default
-      // Organizer/Manager roles require admin approval
+    
       
-      // Step 1: Register user with Strapi auth (default role)
+    
+    
       const userData = {
         username: formData.username,
         email: formData.email,
@@ -129,16 +127,16 @@ const Register = () => {
       
       const userId = authResponse.data.user.id;
 
-      // Step 2: Upload disability card if provided
+      
       let uploadedFile = null;
       if (formData.hasDisability && disabilityCardFile) {
         uploadedFile = await uploadDisabilityCard();
       }
 
-      // Step 3: Create extended user profile with role request
+      
       await createUserProfile(userId, uploadedFile);
 
-      // Step 4: If user requested elevated role, create approval request
+      
       if (formData.intendedRole !== 'attendee') {
         await apiService.createRoleRequest({
           data: {
@@ -191,8 +189,8 @@ const Register = () => {
   return (
     <div className="register-page">
       <div className="register-container">
-        <h1>{t('createAccount')}</h1>
-        <p>{t('registerDescription')}</p>
+        <h1>Create Account</h1>
+        <p>Register for an account to manage your event participation</p>
         
         {message.text && (
           <div className={`message ${message.type}`}>
@@ -207,7 +205,7 @@ const Register = () => {
             
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="firstName">{t('firstName')} *</label>
+                <label htmlFor="firstName">First Name *</label>
                 <input
                   type="text"
                   id="firstName"
@@ -220,7 +218,7 @@ const Register = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="lastName">{t('lastName')} *</label>
+                <label htmlFor="lastName">Last Name *</label>
                 <input
                   type="text"
                   id="lastName"
@@ -314,7 +312,7 @@ const Register = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="email">{t('email')} *</label>
+              <label htmlFor="email">Email Address *</label>
               <input
                 type="email"
                 id="email"
@@ -328,7 +326,7 @@ const Register = () => {
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="password">{t('password')} *</label>
+                <label htmlFor="password">Password *</label>
                 <input
                   type="password"
                   id="password"
@@ -454,7 +452,7 @@ const Register = () => {
             className="submit-btn"
             disabled={loading}
           >
-            {loading ? t('creatingAccount') : t('createAccount')}
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 

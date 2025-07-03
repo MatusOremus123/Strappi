@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 
 const Home = () => {
-  const { t } = useTranslation();
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -18,11 +16,11 @@ const Home = () => {
       try {
         setLoading(true);
         
-        // Fetch recent events for homepage
+        
         const eventsResponse = await apiService.getEvents();
         const events = eventsResponse.data.data;
         
-        // Get upcoming events (limit to 3 for featured section)
+        
         const now = new Date();
         const upcomingEvents = events
           .filter(event => new Date(event.start_time) > now)
@@ -31,7 +29,7 @@ const Home = () => {
         
         setFeaturedEvents(upcomingEvents);
         
-        // Calculate stats
+        
         const upcoming = events.filter(event => new Date(event.start_time) > now);
         const uniqueOrganizers = new Set(events.map(event => event.organizer?.id).filter(Boolean));
         
@@ -56,16 +54,17 @@ const Home = () => {
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
-          <h1>{t('welcome')}</h1>
+          <h1>Welcome to Event Management</h1>
           <p className="hero-subtitle">
-            {t('heroSubtitle')}
+            Discover, register, and participate in events with accessibility in mind. 
+            Our platform ensures everyone can enjoy events regardless of their needs.
           </p>
           <div className="hero-actions">
             <Link to="/events" className="cta-button primary">
-              {t('exploreEvents')}
+              Explore Events
             </Link>
             <Link to="/register" className="cta-button secondary">
-              {t('joinCommunity')}
+              Join Community
             </Link>
           </div>
         </div>
