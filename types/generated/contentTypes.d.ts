@@ -569,12 +569,10 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
           localized: true;
         };
       }>;
-    organizer: Schema.Attribute.String &
-      Schema.Attribute.SetPluginOptions<{
-        i18n: {
-          localized: true;
-        };
-      }>;
+    organizer: Schema.Attribute.Relation<
+      'oneToOne',
+      'api::organizer.organizer'
+    >;
     publishedAt: Schema.Attribute.DateTime;
     start_time: Schema.Attribute.DateTime &
       Schema.Attribute.Required &
@@ -761,6 +759,7 @@ export interface ApiOrganizerOrganizer extends Struct.CollectionTypeSchema {
           localized: true;
         };
       }>;
+    event: Schema.Attribute.Relation<'oneToOne', 'api::event.event'>;
     events: Schema.Attribute.Relation<'oneToMany', 'api::event.event'>;
     locale: Schema.Attribute.String;
     localizations: Schema.Attribute.Relation<

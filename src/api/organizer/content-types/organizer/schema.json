@@ -100,6 +100,12 @@
           "localized": true
         }
       }
+    },
+    "event": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::event.event",
+      "mappedBy": "organizer"
     }
   }
 }

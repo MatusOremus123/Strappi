@@ -102,12 +102,10 @@
       "inversedBy": "event"
     },
     "organizer": {
-      "type": "string",
-      "pluginOptions": {
-        "i18n": {
-          "localized": true
-        }
-      }
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::organizer.organizer",
+      "inversedBy": "event"
     }
   }
 }
