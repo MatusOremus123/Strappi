@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { apiService } from '../services/api';
+import { Link } from 'react-router-dom';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -51,58 +52,70 @@ const Register = () => {
   };
 
   const createUserProfile = async (userId, uploadedFile) => {
+    // Start with just the required fields
     const profileData = {
       data: {
         first_name: formData.firstName,
         last_name: formData.lastName,
-        birthday: formData.birthday,
-        prim_language: formData.primaryLanguage,
         email_address: formData.email,
-        number: formData.disabilityCardNumber || null,
-        disability_card: uploadedFile ? uploadedFile.id : null,
-        status: formData.disabilityCardStatus || 'active',
-        issuing_card: formData.issuingCard || null,
-        expiry: formData.disabilityCardExpiry || null,
-        users_permissions_user: userId
+        password: formData.password,
+        // Add optional fields only if they have values
+        ...(formData.birthday && { birthday: formData.birthday }),
+        ...(formData.primaryLanguage && { primary_language: formData.primaryLanguage }),
+        ...(formData.disabilityCardNumber && { phone_number: formData.disabilityCardNumber }),
+        
+        // Only add disability_card component if user has disability
+        ...(formData.hasDisability && {
+          disability_card: {
+            card_status: formData.disabilityCardStatus || 'active',
+            ...(formData.issuingCard && { issuing_card: formData.issuingCard }),
+            ...(formData.disabilityCardExpiry && { expiry_date: formData.disabilityCardExpiry }),
+            ...(uploadedFile && { file: uploadedFile.id })
+          }
+        })
       }
     };
 
+    console.log('Sending profile data:', profileData);
+
     try {
-      await apiService.createUserProfile(profileData);
+      const response = await apiService.createUserProfile(profileData);
+      console.log('Profile created:', response.data);
+      return response.data;
     } catch (err) {
-      console.error('Profile creation error:', err);
-      throw new Error('Failed to create user profile');
+      console.error('Profile creation error details:', err.response?.data || err);
+      throw new Error(`Failed to create user profile: ${err.response?.data?.error?.message || err.message}`);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    
+    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setMessage({ type: 'error', text: 'Passwords do not match' });
       return;
     }
 
-
+    // Validate password length
     if (formData.password.length < 6) {
       setMessage({ type: 'error', text: 'Password must be at least 6 characters long' });
       return;
     }
 
-    
+    // Validate required fields
     if (!formData.firstName || !formData.lastName) {
       setMessage({ type: 'error', text: 'First name and last name are required' });
       return;
     }
 
-    
+    // Validate business justification for elevated roles
     if (formData.intendedRole !== 'attendee' && !formData.businessJustification.trim()) {
       setMessage({ type: 'error', text: 'Please provide justification for requesting elevated access' });
       return;
     }
 
-    
+    // Validate disability card requirements
     if (formData.hasDisability && !disabilityCardFile) {
       setMessage({ type: 'error', text: 'Please upload your disability card' });
       return;
@@ -112,49 +125,64 @@ const Register = () => {
     setMessage({ type: '', text: '' });
 
     try {
-    
+      console.log('Starting registration process...');
       
-    
-    
+      // Step 1: Register user with Strapi auth first
       const userData = {
         username: formData.username,
         email: formData.email,
         password: formData.password,
       };
 
+      console.log('Sending registration data:', userData);
+      
       const authResponse = await apiService.register(userData);
       console.log('Registration response:', authResponse.data);
       
       const userId = authResponse.data.user.id;
+      console.log('User ID:', userId);
 
-      
-      let uploadedFile = null;
-      if (formData.hasDisability && disabilityCardFile) {
-        uploadedFile = await uploadDisabilityCard();
+      // Step 2: Try to get roles and assign Event Attendee
+      try {
+        console.log('Fetching roles...');
+        const rolesResponse = await apiService.getRoles();
+        console.log('Roles response:', rolesResponse.data);
+        
+        const roles = rolesResponse.data.roles;
+        console.log('Available roles:', roles.map(r => r.name));
+        
+        const eventAttendeeRole = roles.find(role => role.name === 'Event Attendee');
+        console.log('Event Attendee role found:', eventAttendeeRole);
+        
+        if (eventAttendeeRole) {
+          console.log('Assigning Event Attendee role to user', userId);
+          await apiService.updateUserRole(userId, eventAttendeeRole.id);
+          console.log('Role assigned successfully to Event Attendee');
+        } else {
+          console.log('Event Attendee role not found - available roles:', roles.map(r => r.name));
+        }
+      } catch (roleError) {
+        console.error('Role assignment failed:', roleError);
+        console.error('Role error details:', roleError.response?.data);
+        // Continue anyway - user still has basic auth
       }
 
-      
-      await createUserProfile(userId, uploadedFile);
-
-      
-      if (formData.intendedRole !== 'attendee') {
-        await apiService.createRoleRequest({
-          data: {
-            user: userId,
-            requested_role: formData.intendedRole,
-            justification: formData.businessJustification,
-            status: 'pending'
-          }
-        });
+      // Step 3: Try to create extended profile
+      try {
+        let uploadedFile = null;
+        if (formData.hasDisability && disabilityCardFile) {
+          uploadedFile = await uploadDisabilityCard();
+        }
+        await createUserProfile(userId, uploadedFile);
+        console.log('Extended profile created successfully');
+      } catch (profileError) {
+        console.error('Profile creation failed:', profileError);
+        // Don't fail the whole registration - basic user still works
       }
-      
-      const successMessage = formData.intendedRole === 'attendee' 
-        ? 'Registration successful! You can now log in and browse events.'
-        : `Registration successful! Your ${formData.intendedRole.replace('_request', '')} role request has been submitted for admin approval. You can browse events while waiting for approval.`;
-      
+
       setMessage({ 
         type: 'success', 
-        text: successMessage
+        text: 'Registration successful! You can now log in and manage your event participation.'
       });
       
       // Reset form
@@ -178,8 +206,20 @@ const Register = () => {
       setDisabilityCardFile(null);
       
     } catch (err) {
-      console.error('Registration error:', err);
-      const errorMessage = err.message || 'Registration failed. Please try again.';
+      console.error('Registration error details:', err);
+      console.error('Error response:', err.response?.data);
+      
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      // Handle specific error types
+      if (err.response?.data?.error?.message) {
+        errorMessage = err.response.data.error.message;
+      } else if (err.response?.status === 400) {
+        errorMessage = 'Invalid registration data. Please check your information and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setMessage({ type: 'error', text: errorMessage });
     } finally {
       setLoading(false);
@@ -457,7 +497,7 @@ const Register = () => {
         </form>
 
         <div className="login-link">
-          <p>Already have an account? <a href="/login">Sign in here</a></p>
+          <p>Already have an account? <Link to="/login">Sign in here</Link></p>
         </div>
       </div>
     </div>
