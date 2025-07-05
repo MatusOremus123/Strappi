@@ -28,6 +28,8 @@ const EventDetail = () => {
   }, [id]);
 
   const renderAccessibilityFeatures = (accessibilityFeatures) => {
+    console.log('Raw accessibility features:', accessibilityFeatures);
+    
     if (!accessibilityFeatures || accessibilityFeatures.length === 0) {
       return (
         <div className="accessibility-info">
@@ -40,20 +42,58 @@ const EventDetail = () => {
     return (
       <div className="accessibility-info">
         <div className="accessibility-grid">
-          {accessibilityFeatures.map((feature) => (
-            <div key={feature.id} className="accessibility-feature-card">
-              <div className="feature-header">
-                {feature.icon && <span className="feature-icon">{feature.icon}</span>}
-                <h4>{feature.name}</h4>
+          {accessibilityFeatures.map((feature, index) => {
+            console.log('Processing feature:', feature);
+            
+            // Handle the name field
+            const featureName = feature?.name || `Feature ${index + 1}`;
+            
+            // Handle rich text description field
+            let featureDescription = '';
+            if (feature?.description && Array.isArray(feature.description)) {
+              featureDescription = feature.description.map(paragraph => {
+                if (paragraph.children && Array.isArray(paragraph.children)) {
+                  return paragraph.children.map(child => child.text || '').join('');
+                }
+                return typeof paragraph === 'string' ? paragraph : '';
+              }).join(' ');
+            }
+            
+            // Handle media icon field
+            let featureIcon = '';
+            if (feature?.icon) {
+              if (typeof feature.icon === 'string') {
+                featureIcon = feature.icon;
+              } else if (feature.icon.url) {
+                // It's a media object, we'll show the image
+                featureIcon = feature.icon.url;
+              }
+            }
+            
+            return (
+              <div key={feature?.id || index} className="accessibility-feature-card">
+                <div className="feature-header">
+                  {featureIcon && (
+                    <span className="feature-icon">
+                      {featureIcon.startsWith('/') || featureIcon.startsWith('http') ? (
+                        <img 
+                          src={featureIcon.startsWith('/') ? `${process.env.REACT_APP_API_URL || 'http://localhost:1337'}${featureIcon}` : featureIcon} 
+                          alt={featureName}
+                          className="feature-icon-image"
+                        />
+                      ) : (
+                        featureIcon
+                      )}
+                    </span>
+                  )}
+                  <h4>{featureName}</h4>
+                </div>
+                {featureDescription && (
+                  <p className="feature-description">{featureDescription}</p>
+                )}
               </div>
-              {feature.description && (
-                <p className="feature-description">{feature.description}</p>
-              )}
-              {feature.category && (
-                <span className="feature-category">{feature.category}</span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -74,13 +114,20 @@ const EventDetail = () => {
         )}
       </div>
 
-      <div className="event-info">
+      <div className="event-info-container">
         <div className="event-section">
           <h3>📝 Description</h3>
           <div className="event-description">
             {event.description && event.description.length > 0 ? (
               event.description.map((paragraph, index) => (
-                <p key={index}>{paragraph.children[0]?.text}</p>
+                <p key={index}>
+                  {paragraph.children ? 
+                    paragraph.children.map((child, childIndex) => (
+                      <span key={childIndex}>{child.text || ''}</span>
+                    )) : 
+                    (typeof paragraph === 'string' ? paragraph : '')
+                  }
+                </p>
               ))
             ) : (
               <p>No description available</p>
