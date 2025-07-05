@@ -51,43 +51,6 @@ const Register = () => {
     }
   };
 
-  const createUserProfile = async (userId, uploadedFile) => {
-    // Start with just the required fields
-    const profileData = {
-      data: {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email_address: formData.email,
-        password: formData.password,
-        // Add optional fields only if they have values
-        ...(formData.birthday && { birthday: formData.birthday }),
-        ...(formData.primaryLanguage && { primary_language: formData.primaryLanguage }),
-        ...(formData.disabilityCardNumber && { phone_number: formData.disabilityCardNumber }),
-        
-        // Only add disability_card component if user has disability
-        ...(formData.hasDisability && {
-          disability_card: {
-            card_status: formData.disabilityCardStatus || 'active',
-            ...(formData.issuingCard && { issuing_card: formData.issuingCard }),
-            ...(formData.disabilityCardExpiry && { expiry_date: formData.disabilityCardExpiry }),
-            ...(uploadedFile && { file: uploadedFile.id })
-          }
-        })
-      }
-    };
-
-    console.log('Sending profile data:', profileData);
-
-    try {
-      const response = await apiService.createUserProfile(profileData);
-      console.log('Profile created:', response.data);
-      return response.data;
-    } catch (err) {
-      console.error('Profile creation error details:', err.response?.data || err);
-      throw new Error(`Failed to create user profile: ${err.response?.data?.error?.message || err.message}`);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -167,22 +130,46 @@ const Register = () => {
         // Continue anyway - user still has basic auth
       }
 
-      // Step 3: Try to create extended profile
-      try {
-        let uploadedFile = null;
-        if (formData.hasDisability && disabilityCardFile) {
-          uploadedFile = await uploadDisabilityCard();
+      // Step 3: Add disability card information directly to user if provided
+      if (formData.hasDisability) {
+        try {
+          console.log('Adding disability card information to user...');
+          
+          let uploadedFile = null;
+          if (disabilityCardFile) {
+            console.log('Uploading disability card file...');
+            uploadedFile = await uploadDisabilityCard();
+            console.log('File uploaded:', uploadedFile);
+          }
+
+          // Prepare disability card data as direct fields
+          const disabilityUpdateData = {
+            disability_card_status: formData.disabilityCardStatus || 'Active',
+            ...(formData.issuingCard && { disability_issuing_authority: formData.issuingCard }),
+            ...(formData.disabilityCardExpiry && { disability_card_expiry: formData.disabilityCardExpiry }),
+            ...(uploadedFile && { disability_card_file: uploadedFile.id })
+          };
+
+          console.log('Disability card data to save:', disabilityUpdateData);
+
+          // Update the user with disability card information
+          console.log('Updating user with disability card data:', disabilityUpdateData);
+          const response = await apiService.updateUser(userId, disabilityUpdateData);
+          console.log('User updated with disability card:', response.data);
+          
+        } catch (disabilityError) {
+          console.error('Failed to save disability card information:', disabilityError);
+          console.error('Disability error details:', disabilityError.response?.data);
+          // Don't fail the whole registration - user is still created
+          console.log('Registration will continue without disability card info');
         }
-        await createUserProfile(userId, uploadedFile);
-        console.log('Extended profile created successfully');
-      } catch (profileError) {
-        console.error('Profile creation failed:', profileError);
-        // Don't fail the whole registration - basic user still works
       }
 
       setMessage({ 
         type: 'success', 
-        text: 'Registration successful! You can now log in and manage your event participation.'
+        text: formData.hasDisability 
+          ? 'Registration successful! Your accessibility information has been saved. You can now log in and manage your event participation.'
+          : 'Registration successful! You can now log in and manage your event participation.'
       });
       
       // Reset form
@@ -434,9 +421,10 @@ const Register = () => {
                       onChange={handleChange}
                     >
                       <option value="">Select status</option>
-                      <option value="active">Active</option>
-                      <option value="expired">Expired</option>
-                      <option value="pending">Pending Renewal</option>
+                      <option value="Active">Active</option>
+                      <option value="Expired">Expired</option>
+                      <option value="Pending">Pending Renewal</option>
+                      <option value="Suspended">Suspended</option>
                     </select>
                   </div>
                 </div>

@@ -2125,7 +2125,75 @@ fieldset legend {
   }
 }
 
-/* Additional CSS for Accessibility Section */
+/* Additional CSS for Profile Page */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.edit-button,
+.save-button,
+.cancel-button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-normal);
+}
+
+.edit-button {
+  background: var(--primary-color);
+  color: var(--white);
+}
+
+.edit-button:hover {
+  background: var(--primary-hover);
+}
+
+.save-button {
+  background: var(--success-color);
+  color: var(--white);
+}
+
+.save-button:hover:not(:disabled) {
+  background: #047857;
+}
+
+.cancel-button {
+  background: var(--gray-400);
+  color: var(--white);
+}
+
+.cancel-button:hover {
+  background: var(--gray-500);
+}
+
+.current-file,
+.new-file {
+  margin-top: var(--spacing-xs);
+  font-size: 0.9rem;
+  color: var(--gray-600);
+}
+
+.file-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.file-link:hover {
+  text-decoration: underline;
+}
+
+.no-file {
+  color: var(--gray-500);
+  font-style: italic;
+}
+
 .no-accessibility-card {
   background: var(--gray-100);
   padding: var(--spacing-lg);

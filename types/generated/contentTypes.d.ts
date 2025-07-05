@@ -1381,7 +1381,14 @@ export interface PluginUsersPermissionsUser
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    disability_card: Schema.Attribute.Component<'user.disability-card', false>;
+    disability_card_expiry: Schema.Attribute.Date;
+    disability_card_file: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios'
+    >;
+    disability_card_status: Schema.Attribute.Enumeration<
+      ['Active ', 'Expired ', 'Pending']
+    >;
+    disability_issuing_authority: Schema.Attribute.String;
     email: Schema.Attribute.Email &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMaxLength<{

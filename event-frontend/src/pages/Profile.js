@@ -67,10 +67,10 @@ const Profile = () => {
       });
     } else if (section === 'accessibility') {
       setFormData({
-        card_status: user?.disability_card?.card_status || '',
-        issuing_card: user?.disability_card?.issuing_card || '',
-        expiry_date: user?.disability_card?.expiry_date ? 
-          new Date(user.disability_card.expiry_date).toISOString().split('T')[0] : ''
+        card_status: user?.disability_card_status || '',
+        issuing_authority: user?.disability_issuing_authority || '',
+        expiry_date: user?.disability_card_expiry ? 
+          new Date(user.disability_card_expiry).toISOString().split('T')[0] : ''
       });
     }
   };
@@ -110,8 +110,6 @@ const Profile = () => {
 
       console.log('Sending update data:', updateData);
 
-      // Skip /users/me endpoint and go directly to the user ID endpoint
-      console.log('Using direct user update with ID:', user.id);
       const response = await apiService.updateUser(user.id, updateData);
       console.log('Direct user update response:', response);
       
@@ -192,40 +190,25 @@ const Profile = () => {
         }
       }
 
-      // Prepare disability card data as component
-      const disabilityCardData = {
-        card_status: formData.card_status,
-        issuing_card: formData.issuing_card,
-        expiry_date: formData.expiry_date || null
+      // Prepare disability card data as direct fields
+      const updateData = {
+        disability_card_status: formData.card_status,
+        disability_issuing_authority: formData.issuing_authority,
+        disability_card_expiry: formData.expiry_date || null
       };
-
-      // IMPORTANT: Include the existing ID for component updates
-      if (user?.disability_card?.id) {
-        disabilityCardData.id = user.disability_card.id;
-      }
 
       // Handle file data
       if (fileData) {
-        console.log('Adding new file to disability card data');
-        disabilityCardData.file = fileData.id;
-      } else if (user?.disability_card?.file) {
-        console.log('Keeping existing file');
-        disabilityCardData.file = user.disability_card.file.id || user.disability_card.file;
+        console.log('Adding new file to update data');
+        updateData.disability_card_file = fileData.id;
       }
+      // Note: If no new file is uploaded, we keep the existing file
 
-      console.log('Final disability card data:', disabilityCardData);
-
-      // Update user with disability card component
-      // For users-permissions, we send the data directly
-      const updateData = {
-        disability_card: disabilityCardData
-      };
-
-      console.log('Sending update data to API:', updateData);
+      console.log('Final update data:', updateData);
 
       try {
-        const response = await apiService.updateUserWithDisabilityCard(user.id, updateData);
-        console.log('Disability card update response:', response);
+        const response = await apiService.updateUser(user.id, updateData);
+        console.log('Accessibility update response:', response);
         
         if (response?.data) {
           console.log('Update successful, updating local state...');
@@ -363,7 +346,7 @@ const Profile = () => {
                 className="edit-button"
                 onClick={() => handleEditStart('accessibility')}
               >
-                {user?.disability_card ? 'Edit' : 'Add'}
+                {user?.disability_card_status ? 'Edit' : 'Add'}
               </button>
             )}
           </div>
@@ -386,12 +369,12 @@ const Profile = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label htmlFor="issuing_card">Issuing Authority:</label>
+                <label htmlFor="issuing_authority">Issuing Authority:</label>
                 <input
                   type="text"
-                  id="issuing_card"
-                  name="issuing_card"
-                  value={formData.issuing_card}
+                  id="issuing_authority"
+                  name="issuing_authority"
+                  value={formData.issuing_authority}
                   onChange={handleInputChange}
                   placeholder="e.g., Department of Health"
                 />
@@ -414,9 +397,9 @@ const Profile = () => {
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={handleFileChange}
                 />
-                {user?.disability_card?.file && !fileUpload && (
+                {user?.disability_card_file && !fileUpload && (
                   <p className="current-file">
-                    Current: {user.disability_card.file.name || 'Document uploaded'}
+                    Current: {user.disability_card_file.name || 'Document uploaded'}
                   </p>
                 )}
                 {fileUpload && (
@@ -434,30 +417,30 @@ const Profile = () => {
             </form>
           ) : (
             <>
-              {user?.disability_card ? (
+              {user?.disability_card_status ? (
                 <div className="profile-info">
                   <div className="disability-card-info">
                     <p><strong>Status:</strong> <span className="status-badge">
-                      {user.disability_card.card_status || 'Not specified'}
+                      {user.disability_card_status || 'Not specified'}
                     </span></p>
 
-                    {user.disability_card.issuing_card && (
-                      <p><strong>Issuing Authority:</strong> {user.disability_card.issuing_card}</p>
+                    {user.disability_issuing_authority && (
+                      <p><strong>Issuing Authority:</strong> {user.disability_issuing_authority}</p>
                     )}
 
-                    {user.disability_card.expiry_date && (
-                      <p><strong>Expiry Date:</strong> {new Date(user.disability_card.expiry_date).toLocaleDateString()}</p>
+                    {user.disability_card_expiry && (
+                      <p><strong>Expiry Date:</strong> {new Date(user.disability_card_expiry).toLocaleDateString()}</p>
                     )}
 
-                    {user.disability_card.file ? (
+                    {user.disability_card_file ? (
                       <div className="card-file-info">
                         <p><strong>Card Document:</strong> 
-                          <span className="file-uploaded">✅ {user.disability_card.file.name || 'Document uploaded'}</span>
+                          <span className="file-uploaded">✅ {user.disability_card_file.name || 'Document uploaded'}</span>
                         </p>
-                        {user.disability_card.file.url && (
+                        {user.disability_card_file.url && (
                           <p>
                             <a 
-                              href={`${process.env.REACT_APP_API_URL || 'http://localhost:1337'}${user.disability_card.file.url}`} 
+                              href={`${process.env.REACT_APP_API_URL || 'http://localhost:1337'}${user.disability_card_file.url}`} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="file-link"

@@ -66,10 +66,29 @@
       "inversedBy": "users",
       "configurable": false
     },
-    "disability_card": {
-      "type": "component",
-      "component": "user.disability-card",
-      "repeatable": false
+    "disability_card_status": {
+      "type": "enumeration",
+      "enum": [
+        "Active ",
+        "Expired ",
+        "Pending"
+      ]
+    },
+    "disability_issuing_authority": {
+      "type": "string"
+    },
+    "disability_card_expiry": {
+      "type": "date"
+    },
+    "disability_card_file": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
     }
   }
 }
