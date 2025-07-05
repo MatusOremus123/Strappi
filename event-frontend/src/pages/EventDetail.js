@@ -7,8 +7,6 @@ const EventDetail = () => {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -29,29 +27,36 @@ const EventDetail = () => {
     fetchEvent();
   }, [id]);
 
-  const handleFileUpload = (e) => {
-    setSelectedFile(e.target.files[0]);
-  };
-
-  const uploadDocument = async () => {
-    if (!selectedFile) return;
-    
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('files', selectedFile);
-    
-    try {
-      const response = await apiService.uploadFile(formData);
-      console.log('Upload response:', response.data);
-      alert('Document uploaded successfully!');
-      setSelectedFile(null);
-      document.querySelector('input[type="file"]').value = '';
-    } catch (err) {
-      console.error('Upload error:', err);
-      alert('Upload failed. Please try again.');
-    } finally {
-      setUploading(false);
+  const renderAccessibilityFeatures = (accessibilityFeatures) => {
+    if (!accessibilityFeatures || accessibilityFeatures.length === 0) {
+      return (
+        <div className="accessibility-info">
+          <p>No specific accessibility features listed for this event.</p>
+          <p>For accessibility inquiries, please contact the event organizer.</p>
+        </div>
+      );
     }
+
+    return (
+      <div className="accessibility-info">
+        <div className="accessibility-grid">
+          {accessibilityFeatures.map((feature) => (
+            <div key={feature.id} className="accessibility-feature-card">
+              <div className="feature-header">
+                {feature.icon && <span className="feature-icon">{feature.icon}</span>}
+                <h4>{feature.name}</h4>
+              </div>
+              {feature.description && (
+                <p className="feature-description">{feature.description}</p>
+              )}
+              {feature.category && (
+                <span className="feature-category">{feature.category}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   if (loading) return <div className="loading">Loading event details...</div>;
@@ -71,10 +76,39 @@ const EventDetail = () => {
 
       <div className="event-info">
         <div className="event-section">
+          <h3>📝 Description</h3>
+          <div className="event-description">
+            {event.description && event.description.length > 0 ? (
+              event.description.map((paragraph, index) => (
+                <p key={index}>{paragraph.children[0]?.text}</p>
+              ))
+            ) : (
+              <p>No description available</p>
+            )}
+          </div>
+        </div>
+
+        <div className="event-section">
           <h3>📅 Date & Time</h3>
           <p><strong>Start:</strong> {new Date(event.start_time).toLocaleString()}</p>
           <p><strong>End:</strong> {new Date(event.end_time).toLocaleString()}</p>
         </div>
+
+        {event.event_location && (
+          <div className="event-section">
+            <h3>📍 Location</h3>
+            <p><strong>Venue:</strong> {event.event_location.name || 'Not specified'}</p>
+            {event.event_location.address && event.event_location.address.length > 0 && (
+              <p><strong>Address:</strong> {event.event_location.address[0]?.children[0]?.text}</p>
+            )}
+            {event.event_location.capacity && (
+              <p><strong>Capacity:</strong> {event.event_location.capacity} people</p>
+            )}
+            {event.event_location.website && (
+              <p><strong>Website:</strong> <a href={event.event_location.website} target="_blank" rel="noopener noreferrer">{event.event_location.website}</a></p>
+            )}
+          </div>
+        )}
 
         <div className="event-section">
           <h3>👥 Organizer</h3>
@@ -103,57 +137,10 @@ const EventDetail = () => {
           )}
         </div>
 
-        {event.event_location && (
-          <div className="event-section">
-            <h3>📍 Location</h3>
-            <p><strong>Venue:</strong> {event.event_location.name || 'Not specified'}</p>
-            {event.event_location.address && event.event_location.address.length > 0 && (
-              <p><strong>Address:</strong> {event.event_location.address[0]?.children[0]?.text}</p>
-            )}
-            {event.event_location.capacity && (
-              <p><strong>Capacity:</strong> {event.event_location.capacity} people</p>
-            )}
-            {event.event_location.website && (
-              <p><strong>Website:</strong> <a href={event.event_location.website} target="_blank" rel="noopener noreferrer">{event.event_location.website}</a></p>
-            )}
-          </div>
-        )}
-
+        {/* Accessibility Features Section */}
         <div className="event-section">
-          <h3>📝 Description</h3>
-          <div className="event-description">
-            {event.description && event.description.length > 0 ? (
-              event.description.map((paragraph, index) => (
-                <p key={index}>{paragraph.children[0]?.text}</p>
-              ))
-            ) : (
-              <p>No description available</p>
-            )}
-          </div>
-        </div>
-
-        <div className="event-section">
-          <h3>📎 Upload Document</h3>
-          <div className="upload-section">
-            <input 
-              type="file" 
-              onChange={handleFileUpload}
-              accept=".pdf,.doc,.docx,.jpg,.png,.txt"
-            />
-            {selectedFile && (
-              <div className="file-info">
-                <p><strong>Selected:</strong> {selectedFile.name}</p>
-                <p><strong>Size:</strong> {(selectedFile.size / 1024).toFixed(2)} KB</p>
-                <button 
-                  onClick={uploadDocument} 
-                  className="upload-btn"
-                  disabled={uploading}
-                >
-                  {uploading ? 'Uploading...' : 'Upload Document'}
-                </button>
-              </div>
-            )}
-          </div>
+          <h3>♿ Accessibility Features</h3>
+          {renderAccessibilityFeatures(event.accessibility_features)}
         </div>
       </div>
     </div>

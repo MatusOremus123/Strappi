@@ -7,13 +7,36 @@ const Navigation = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem('authToken');
-    const userData = localStorage.getItem('user');
+    // Simple check for auth status
+    const checkAuth = () => {
+      const token = localStorage.getItem('authToken');
+      const userData = localStorage.getItem('user');
+      
+      if (token && userData) {
+        try {
+          setUser(JSON.parse(userData));
+        } catch (err) {
+          console.error('Error parsing user data:', err);
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          setUser(null);
+        }
+      }
+    };
+
+    // Check on mount
+    checkAuth();
+
+    // Listen for storage changes (when user logs in/out in another tab)
+    window.addEventListener('storage', checkAuth);
     
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-    }
+    // Listen for custom auth events
+    window.addEventListener('auth-changed', checkAuth);
+
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('auth-changed', checkAuth);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -58,7 +81,7 @@ const Navigation = () => {
               </button>
             </>
           ) : (
-            
+            // Not logged in navigation
             <>
               <Link to="/login">Sign In</Link>
               <Link to="/register">Register</Link>

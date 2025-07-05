@@ -440,6 +440,7 @@ export interface ApiAccessibilityFeatureAccessibilityFeature
           localized: true;
         };
       }>;
+    events: Schema.Attribute.Relation<'manyToMany', 'api::event.event'>;
     icon: Schema.Attribute.Media<'images'> &
       Schema.Attribute.SetPluginOptions<{
         i18n: {
@@ -528,6 +529,10 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
     };
   };
   attributes: {
+    accessibility_features: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::accessibility-feature.accessibility-feature'
+    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

@@ -40,7 +40,7 @@ export const apiService = {
   updateUserRole: (userId, roleId) =>
     api.put(`/users/${userId}`, { role: roleId }),
 
-  // Role Requests (for approval workflow)
+  // Role Requests
   createRoleRequest: (requestData) =>
     api.post('/role-requests', requestData),
 
@@ -58,17 +58,65 @@ export const apiService = {
       },
     }),
 
-  // User Profile Management (for extended user data)
+  // User Profile Management
   createUserProfile: (profileData) => 
-    api.post('/app-users', profileData),
+    api.post('/app-users', { data: profileData }),
   
   updateUserProfile: (id, profileData) => 
-    api.put(`/app-users/${id}`, profileData),
+    api.put(`/app-users/${id}`, { data: profileData }),
   
-  getUserProfile: (userId) => 
-    api.get(`/app-users?filters[users_permissions_user][id][$eq]=${userId}&populate=*`),
+  getUserProfile: (userId) => {
+    console.log('getUserProfile called with userId:', userId);
+    const config = {
+      params: {
+        'filters[users_permissions_user][id][$eq]': userId,
+        'populate[disability_card][populate]': '*',
+        'populate[accessibility_needs]': '*',
+        'populate[tickets]': '*',
+        'populate[ticket]': '*',
+        'populate[users_permissions_user]': '*'
+      }
+    };
+    console.log('API config:', config);
+    return api.get('/app-users', config);
+  },
 
-  // Additional useful endpoints
+  getUserProfileSimple: (userId) => {
+    console.log('getUserProfileSimple called with userId:', userId);
+    const params = new URLSearchParams();
+    params.append('populate[disability_card][populate]', 'file');
+    params.append('populate[accessibility_needs]', '*');
+    params.append('populate[tickets]', '*');
+    params.append('populate[ticket]', '*');
+    params.append('populate[users_permissions_user]', '*');
+    
+    return api.get(`/app-users?${params.toString()}`).catch((error) => {
+      console.log('Specific populate failed, trying basic populate:', error);
+      return api.get('/app-users?populate=*');
+    });
+  },
+
+  // NEW: User Account Management
+  updateUser: (userId, userData) => 
+    api.put(`/users/${userId}`, userData),
+
+  updateUserViaAuth: (userId, userData) => 
+    api.put(`/users-permissions/users/${userId}`, userData),
+
+  // Disability Card Management
+  createDisabilityCard: (cardData) => 
+    api.post('/disability-cards', { data: cardData }),
+
+  updateDisabilityCard: (cardId, cardData) => 
+    api.put(`/disability-cards/${cardId}`, { data: cardData }),
+
+  getDisabilityCard: (cardId) => 
+    api.get(`/disability-cards/${cardId}?populate=*`),
+
+  deleteDisabilityCard: (cardId) => 
+    api.delete(`/disability-cards/${cardId}`),
+
+  // Additional
   getAccessibilityFeatures: () => 
     api.get('/accessibility-features'),
   
@@ -79,7 +127,12 @@ export const apiService = {
     api.post('/tickets', ticketData),
   
   getUserTickets: (userId) => 
-    api.get(`/tickets?filters[app_user][users_permissions_user][id][$eq]=${userId}&populate=*`),
+    api.get('/tickets', {
+      params: {
+        'filters[app_user][users_permissions_user][id][$eq]': userId,
+        'populate': '*'
+      }
+    }),
   
   getLocations: () => 
     api.get('/locations?populate=*'),
@@ -87,9 +140,30 @@ export const apiService = {
   getOrganizers: () => 
     api.get('/organizers?populate=*'),
 
-  // Current user info
   getMe: () =>
     api.get('/users/me?populate=*'),
+
+  // ⭐️ NEW: Combined helper function
+  addDisabilityCard: async (profileId, disabilityCardData) => {
+    try {
+      // Create new disability card
+      const newCardResponse = await api.post('/disability-cards', { data: disabilityCardData });
+      const newCard = newCardResponse.data.data;
+      if (!newCard || !newCard.id) {
+        throw new Error('Failed to create disability card.');
+      }
+
+      // Link it to the user's profile
+      return await api.put(`/app-users/${profileId}`, {
+        data: {
+          disability_card: newCard.id
+        }
+      });
+    } catch (err) {
+      console.error('Error adding disability card:', err);
+      throw err;
+    }
+  }
 };
 
 export default api;

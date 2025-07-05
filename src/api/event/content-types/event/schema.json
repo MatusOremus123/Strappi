@@ -106,6 +106,12 @@
       "relation": "oneToOne",
       "target": "api::organizer.organizer",
       "inversedBy": "event"
+    },
+    "accessibility_features": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::accessibility-feature.accessibility-feature",
+      "mappedBy": "events"
     }
   }
 }

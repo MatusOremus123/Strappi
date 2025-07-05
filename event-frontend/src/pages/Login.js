@@ -38,18 +38,23 @@ const Login = () => {
       
       // Store auth token and user info
       const { jwt, user } = response.data;
-      localStorage.setItem('authToken', jwt);
-      localStorage.setItem('user', JSON.stringify(user));
       
-      setMessage({ 
-        type: 'success', 
-        text: 'Login successful! Redirecting...' 
-      });
-      
-      // Redirect to events page after successful login
-      setTimeout(() => {
-        navigate('/events');
-      }, 1000);
+      if (jwt && user) {
+        localStorage.setItem('authToken', jwt);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        setMessage({ 
+          type: 'success', 
+          text: 'Login successful! Redirecting...' 
+        });
+        
+        // Simple approach: just use window.location to refresh everything
+        setTimeout(() => {
+          window.location.href = '/events';
+        }, 1000);
+      } else {
+        throw new Error('Invalid login response - missing token or user data');
+      }
       
     } catch (err) {
       console.error('Login error:', err);

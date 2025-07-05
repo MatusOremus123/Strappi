@@ -6,36 +6,275 @@ const Profile = () => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingSection, setEditingSection] = useState(null); // 'account' or 'accessibility'
+  const [formData, setFormData] = useState({});
+  const [fileUpload, setFileUpload] = useState(null);
+  const [updating, setUpdating] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadUserData = async () => {
       const token = localStorage.getItem('authToken');
       const userData = localStorage.getItem('user');
-      
+
       if (!token || !userData) {
         navigate('/login');
         return;
       }
-      
+
       try {
         const user = JSON.parse(userData);
-        setUser(user);
-        
-        // Try to get extended profile
-        const profileResponse = await apiService.getUserProfile(user.id);
-        if (profileResponse.data.data.length > 0) {
-          setProfile(profileResponse.data.data[0]);
+        if (isMounted) setUser(user);
+
+        const allProfilesResponse = await apiService.getUserProfileSimple(user.id);
+        const userProfile = allProfilesResponse.data.data.find(profile => {
+          if (profile.users_permissions_user?.id === user.id) return true;
+          return profile.email_address?.toLowerCase() === user.email?.toLowerCase();
+        });
+
+        if (userProfile && isMounted) {
+          setProfile(userProfile);
         }
       } catch (err) {
         console.error('Error loading profile:', err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     loadUserData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
+
+  const handleEditStart = (section) => {
+    setEditingSection(section);
+    setIsEditing(true);
+    
+    if (section === 'account') {
+      setFormData({
+        username: user.username || '',
+        email: user.email || ''
+      });
+    } else if (section === 'accessibility') {
+      setFormData({
+        card_status: profile?.disability_card?.card_status || '',
+        issuing_card: profile?.disability_card?.issuing_card || '',
+        expiry_date: profile?.disability_card?.expiry_date ? 
+          new Date(profile.disability_card.expiry_date).toISOString().split('T')[0] : ''
+      });
+    }
+  };
+
+  const handleEditCancel = () => {
+    setIsEditing(false);
+    setEditingSection(null);
+    setFormData({});
+    setFileUpload(null);
+    setMessage({ type: '', text: '' });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    setFileUpload(e.target.files[0]);
+  };
+
+  const handleAccountUpdate = async (e) => {
+    e.preventDefault();
+    setUpdating(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      // Update user account information
+      const updateData = {
+        username: formData.username,
+        email: formData.email
+      };
+
+      let response;
+      try {
+        // Use the /users/me endpoint which works with authentication
+        response = await apiService.updateCurrentUser(updateData);
+      } catch (error) {
+        if (error.response?.status === 403 || error.response?.status === 405) {
+          console.log('Standard endpoint failed, trying direct user update...');
+          // Try the direct user endpoint
+          response = await apiService.updateUser(user.id, updateData);
+        } else {
+          throw error;
+        }
+      }
+      
+      if (response.data) {
+        // Update local storage with the response data
+        const updatedUser = { ...user, ...response.data };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        
+        setMessage({ type: 'success', text: 'Account information updated successfully!' });
+        setIsEditing(false);
+        setEditingSection(null);
+        setFormData({});
+      }
+    } catch (error) {
+      console.error('Error updating account:', error);
+      let errorMessage = 'Failed to update account information';
+      
+      if (error.response?.status === 403) {
+        errorMessage = 'Permission denied. You may not have permission to update user information.';
+      } else if (error.response?.status === 405) {
+        errorMessage = 'Method not allowed. User updates may be disabled.';
+      } else if (error.response?.status === 400) {
+        const details = error.response.data?.error?.details || error.response.data?.message;
+        errorMessage = `Invalid data: ${details || 'Please check your input.'}`;
+      } else if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleAccessibilityUpdate = async (e) => {
+    e.preventDefault();
+    setUpdating(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      let fileData = null;
+      
+      // Handle file upload if a new file is selected
+      if (fileUpload) {
+        const formDataFile = new FormData();
+        formDataFile.append('files', fileUpload);
+        
+        try {
+          const fileResponse = await apiService.uploadFile(formDataFile);
+          if (fileResponse.data && fileResponse.data.length > 0) {
+            fileData = fileResponse.data[0];
+          }
+        } catch (uploadError) {
+          console.error('File upload failed:', uploadError);
+          setMessage({ type: 'error', text: 'Failed to upload file. Please try again.' });
+          setUpdating(false);
+          return;
+        }
+      }
+
+      // Prepare disability card data
+      const disabilityCardData = {
+        card_status: formData.card_status,
+        issuing_card: formData.issuing_card,
+        expiry_date: formData.expiry_date || null
+      };
+
+      // Only update file if a new one was uploaded
+      if (fileData) {
+        disabilityCardData.file = fileData.id;
+      }
+
+      let response;
+      try {
+        if (profile?.disability_card?.id) {
+          // Update existing disability card
+          response = await apiService.updateDisabilityCard(profile.disability_card.id, disabilityCardData);
+        } else {
+          // Create new disability card
+          const newCardResponse = await apiService.createDisabilityCard(disabilityCardData);
+          if (newCardResponse.data?.data) {
+            // Update profile to link with new disability card
+            try {
+              response = await apiService.updateUserProfile(profile.id, {
+                disability_card: newCardResponse.data.data.id
+              });
+            } catch (profileUpdateError) {
+              console.error('Profile update failed:', profileUpdateError);
+              // Card was created but profile link failed
+              setMessage({ 
+                type: 'warning', 
+                text: 'Accessibility information saved but profile link failed. Please refresh the page.' 
+              });
+              setUpdating(false);
+              return;
+            }
+          }
+        }
+      } catch (cardError) {
+        console.error('Disability card operation failed:', cardError);
+        let errorMessage = 'Failed to update accessibility information';
+        
+        if (cardError.response?.status === 403) {
+          errorMessage = 'Permission denied. You may not have permission to update accessibility information.';
+        } else if (cardError.response?.status === 400) {
+          errorMessage = cardError.response.data?.message || 'Invalid data provided.';
+        }
+        
+        setMessage({ type: 'error', text: errorMessage });
+        setUpdating(false);
+        return;
+      }
+
+      // Reload profile data
+      try {
+        const allProfilesResponse = await apiService.getUserProfileSimple(user.id);
+        const userProfile = allProfilesResponse.data.data.find(profile => {
+          if (profile.users_permissions_user?.id === user.id) return true;
+          return profile.email_address?.toLowerCase() === user.email?.toLowerCase();
+        });
+
+        if (userProfile) {
+          setProfile(userProfile);
+        }
+      } catch (reloadError) {
+        console.error('Profile reload failed:', reloadError);
+        // Update succeeded but reload failed
+        setMessage({ 
+          type: 'warning', 
+          text: 'Information updated successfully but page refresh failed. Please reload manually.' 
+        });
+        setUpdating(false);
+        return;
+      }
+
+      setMessage({ type: 'success', text: 'Accessibility information updated successfully!' });
+      setIsEditing(false);
+      setEditingSection(null);
+      setFileUpload(null);
+      
+    } catch (error) {
+      console.error('Error updating accessibility info:', error);
+      let errorMessage = 'Failed to update accessibility information';
+      
+      if (error.response?.status === 403) {
+        errorMessage = 'Permission denied. You may not have permission to update this information.';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || 'Invalid data provided.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   if (loading) return <div className="loading">Loading profile...</div>;
   if (!user) return <div className="error">Please log in to view your profile</div>;
@@ -44,78 +283,246 @@ const Profile = () => {
     <div className="profile-page">
       <div className="profile-container">
         <h1>My Profile</h1>
-        
-        {/* Basic User Info */}
-        <div className="profile-section">
-          <h2>Account Information</h2>
-          <div className="profile-info">
-            <p><strong>Username:</strong> {user.username}</p>
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Role:</strong> {user.role?.name || 'User'}</p>
-            <p><strong>Member Since:</strong> {new Date(user.createdAt).toLocaleDateString()}</p>
+
+        {message.text && (
+          <div className={`message ${message.type}`}>
+            {message.text}
           </div>
+        )}
+
+        {/* Account Information */}
+        <div className="profile-section">
+          <div className="section-header">
+            <h2>Account Information</h2>
+            {!isEditing && (
+              <button 
+                className="edit-button"
+                onClick={() => handleEditStart('account')}
+              >
+                Edit
+              </button>
+            )}
+          </div>
+
+          {isEditing && editingSection === 'account' ? (
+            <form onSubmit={handleAccountUpdate} className="edit-form">
+              <div className="form-group">
+                <label htmlFor="username">Username:</label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="email">Email:</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-actions">
+                <button type="submit" disabled={updating} className="save-button">
+                  {updating ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button type="button" onClick={handleEditCancel} className="cancel-button">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="profile-info">
+              <p><strong>Username:</strong> {user.username}</p>
+              <p><strong>Email:</strong> {user.email}</p>
+              <p><strong>Role:</strong> {user.role?.name || 'User'}</p>
+              <p><strong>Member Since:</strong> {new Date(user.createdAt).toLocaleDateString()}</p>
+            </div>
+          )}
         </div>
 
-        {/* Extended Profile Info */}
-        {profile && (
-          <div className="profile-section">
-            <h2>Personal Information</h2>
-            <div className="profile-info">
-              <p><strong>Name:</strong> {profile.first_name} {profile.last_name}</p>
-              {profile.birthday && (
-                <p><strong>Birthday:</strong> {new Date(profile.birthday).toLocaleDateString()}</p>
-              )}
-              {profile.primary_language && (
-                <p><strong>Primary Language:</strong> {profile.primary_language}</p>
-              )}
-              {profile.phone_number && (
-                <p><strong>Phone:</strong> {profile.phone_number}</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Accessibility Info */}
-        {profile?.disability_card && (
-          <div className="profile-section">
+        {/* Accessibility Information */}
+        <div className="profile-section">
+          <div className="section-header">
             <h2>Accessibility Information</h2>
-            <div className="profile-info">
-              <p><strong>Disability Card Status:</strong> {profile.disability_card.card_status}</p>
-              {profile.disability_card.issuing_card && (
-                <p><strong>Issuing Authority:</strong> {profile.disability_card.issuing_card}</p>
-              )}
-              {profile.disability_card.expiry_date && (
-                <p><strong>Expiry Date:</strong> {new Date(profile.disability_card.expiry_date).toLocaleDateString()}</p>
-              )}
-            </div>
+            {!isEditing && (
+              <button 
+                className="edit-button"
+                onClick={() => handleEditStart('accessibility')}
+              >
+                {profile?.disability_card ? 'Edit' : 'Add'}
+              </button>
+            )}
           </div>
-        )}
 
-        {/* Role-specific features */}
+          {isEditing && editingSection === 'accessibility' ? (
+            <form onSubmit={handleAccessibilityUpdate} className="edit-form">
+              <div className="form-group">
+                <label htmlFor="card_status">Card Status:</label>
+                <select
+                  id="card_status"
+                  name="card_status"
+                  value={formData.card_status}
+                  onChange={handleInputChange}
+                >
+                  <option value="">Select status</option>
+                  <option value="Active">Active</option>
+                  <option value="Expired">Expired</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Suspended">Suspended</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="issuing_card">Issuing Authority:</label>
+                <input
+                  type="text"
+                  id="issuing_card"
+                  name="issuing_card"
+                  value={formData.issuing_card}
+                  onChange={handleInputChange}
+                  placeholder="e.g., Department of Health"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="expiry_date">Expiry Date:</label>
+                <input
+                  type="date"
+                  id="expiry_date"
+                  name="expiry_date"
+                  value={formData.expiry_date}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="file">Card Document:</label>
+                <input
+                  type="file"
+                  id="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleFileChange}
+                />
+                {profile?.disability_card?.file && !fileUpload && (
+                  <p className="current-file">
+                    Current: {profile.disability_card.file.name || 'Document uploaded'}
+                  </p>
+                )}
+                {fileUpload && (
+                  <p className="new-file">New file selected: {fileUpload.name}</p>
+                )}
+              </div>
+              <div className="form-actions">
+                <button type="submit" disabled={updating} className="save-button">
+                  {updating ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button type="button" onClick={handleEditCancel} className="cancel-button">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              {profile?.disability_card ? (
+                <div className="profile-info">
+                  <div className="disability-card-info">
+                    <p><strong>Status:</strong> <span className="status-badge">
+                      {profile.disability_card.card_status || 'Not specified'}
+                    </span></p>
+
+                    {profile.disability_card.issuing_card && (
+                      <p><strong>Issuing Authority:</strong> {profile.disability_card.issuing_card}</p>
+                    )}
+
+                    {profile.disability_card.expiry_date && (
+                      <p><strong>Expiry Date:</strong> {new Date(profile.disability_card.expiry_date).toLocaleDateString()}</p>
+                    )}
+
+                    {profile.disability_card.file ? (
+                      <div className="card-file-info">
+                        <p><strong>Card Document:</strong> 
+                          <span className="file-uploaded">✅ {profile.disability_card.file.name || 'Document uploaded'}</span>
+                        </p>
+                        {profile.disability_card.file.url && (
+                          <p>
+                            <a 
+                              href={`${process.env.REACT_APP_API_URL || 'http://localhost:1337'}${profile.disability_card.file.url}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="file-link"
+                            >
+                              View Document
+                            </a>
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p><strong>Card Document:</strong> <span className="no-file">No document uploaded</span></p>
+                    )}
+
+                    <div className="accessibility-note">
+                      <p><strong>Note:</strong> Your disability card information helps us provide appropriate accessibility accommodations for events.</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="profile-info">
+                  <div className="no-accessibility-card">
+                    <p className="no-info">No accessibility card on file.</p>
+                    <p>If you have accessibility needs:</p>
+                    <ul>
+                      <li>You can add them during event registration</li>
+                      <li>Or contact support to update your profile</li>
+                      <li>Use the "Add" button above to add accessibility information</li>
+                    </ul>
+                    <div className="accessibility-note">
+                      <p><strong>Note:</strong> Accessibility information helps us provide appropriate accommodations for events you attend.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Role-specific Features */}
         {user.role?.name === 'Event Attendee' && (
           <div className="profile-section">
             <h2>My Events</h2>
             <p>Here you can view events you've registered for.</p>
-            {/* TODO: Add list of user's tickets/events */}
+            <div className="feature-placeholder">
+              <p>🎫 <strong>Upcoming Events:</strong> Feature coming soon</p>
+              <p>📅 <strong>Event History:</strong> Feature coming soon</p>
+              <p>🎟️ <strong>My Tickets:</strong> Feature coming soon</p>
+            </div>
           </div>
         )}
 
         {user.role?.name === 'Event Organizer' && (
           <div className="profile-section">
-            <h2>My Events</h2>
-            <p>Here you can manage events you've created.</p>
-            <button className="btn-primary">Create New Event</button>
-            {/* TODO: Add list of user's created events */}
+            <h2>Organizer Dashboard</h2>
+            <p>Manage your events and view attendee information.</p>
+            <div className="feature-placeholder">
+              <p>✨ <strong>Create Event:</strong> Feature coming soon</p>
+              <p>📊 <strong>Event Analytics:</strong> Feature coming soon</p>
+              <p>👥 <strong>Attendee Management:</strong> Feature coming soon</p>
+            </div>
           </div>
         )}
 
         {user.role?.name === 'System Admin' && (
           <div className="profile-section">
             <h2>Admin Tools</h2>
-            <p>Access admin features and manage the system.</p>
-            <button className="btn-primary">Manage Users</button>
-            <button className="btn-primary">Approve Role Requests</button>
-            {/* TODO: Add admin tools */}
+            <p>Access administrative features and system management.</p>
+            <div className="feature-placeholder">
+              <p>👥 <strong>User Management:</strong> Feature coming soon</p>
+              <p>✅ <strong>Role Requests:</strong> Feature coming soon</p>
+              <p>📈 <strong>System Analytics:</strong> Feature coming soon</p>
+            </div>
           </div>
         )}
       </div>

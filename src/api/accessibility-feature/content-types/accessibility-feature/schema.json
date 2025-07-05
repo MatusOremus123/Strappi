@@ -55,6 +55,12 @@
       "relation": "manyToMany",
       "target": "api::app-user.app-user",
       "inversedBy": "accessibility_needs"
+    },
+    "events": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::event.event",
+      "inversedBy": "accessibility_features"
     }
   }
 }
