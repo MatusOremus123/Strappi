@@ -33,7 +33,7 @@
     "phone_number": {
       "type": "string"
     },
-    "disability_card": {
+    "disability_card_status": {
       "type": "component",
       "component": "user.disability-card",
       "repeatable": false

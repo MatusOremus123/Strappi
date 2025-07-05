@@ -40,7 +40,7 @@ export const apiService = {
   updateUserRole: (userId, roleId) =>
     api.put(`/users/${userId}`, { role: roleId }),
 
-  // Role Requests
+  // Role Requests (for approval workflow)
   createRoleRequest: (requestData) =>
     api.post('/role-requests', requestData),
 
@@ -58,13 +58,14 @@ export const apiService = {
       },
     }),
 
-  // User Profile Management
+  // User Profile Management (for extended user data) - FIXED VERSION
   createUserProfile: (profileData) => 
     api.post('/app-users', { data: profileData }),
   
   updateUserProfile: (id, profileData) => 
     api.put(`/app-users/${id}`, { data: profileData }),
   
+  // FIXED: Use axios params config to properly handle URL encoding
   getUserProfile: (userId) => {
     console.log('getUserProfile called with userId:', userId);
     const config = {
@@ -81,8 +82,10 @@ export const apiService = {
     return api.get('/app-users', config);
   },
 
+  // Simple fallback method - get all profiles and filter client-side
   getUserProfileSimple: (userId) => {
     console.log('getUserProfileSimple called with userId:', userId);
+    // Use URLSearchParams to properly encode the nested populate
     const params = new URLSearchParams();
     params.append('populate[disability_card][populate]', 'file');
     params.append('populate[accessibility_needs]', '*');
@@ -96,14 +99,23 @@ export const apiService = {
     });
   },
 
-  // NEW: User Account Management
+  // NEW: User Account Management Methods
   updateUser: (userId, userData) => 
     api.put(`/users/${userId}`, userData),
 
+  // Update current user profile (works with authentication)
+  updateCurrentUser: (userData) => 
+    api.put('/users/me', userData),
+
+  // Alternative method for updating user via users-permissions plugin
   updateUserViaAuth: (userId, userData) => 
     api.put(`/users-permissions/users/${userId}`, userData),
 
-  // Disability Card Management
+  // NEW: Disability Card Management Methods (now as component)
+  updateUserWithDisabilityCard: (userId, userData) => 
+    api.put(`/users/${userId}`, userData),
+
+  // Legacy methods - keeping for backward compatibility
   createDisabilityCard: (cardData) => 
     api.post('/disability-cards', { data: cardData }),
 
@@ -116,7 +128,7 @@ export const apiService = {
   deleteDisabilityCard: (cardId) => 
     api.delete(`/disability-cards/${cardId}`),
 
-  // Additional
+  // Additional useful endpoints
   getAccessibilityFeatures: () => 
     api.get('/accessibility-features'),
   
@@ -140,30 +152,9 @@ export const apiService = {
   getOrganizers: () => 
     api.get('/organizers?populate=*'),
 
+  // Current user info
   getMe: () =>
     api.get('/users/me?populate=*'),
-
-  // ⭐️ NEW: Combined helper function
-  addDisabilityCard: async (profileId, disabilityCardData) => {
-    try {
-      // Create new disability card
-      const newCardResponse = await api.post('/disability-cards', { data: disabilityCardData });
-      const newCard = newCardResponse.data.data;
-      if (!newCard || !newCard.id) {
-        throw new Error('Failed to create disability card.');
-      }
-
-      // Link it to the user's profile
-      return await api.put(`/app-users/${profileId}`, {
-        data: {
-          disability_card: newCard.id
-        }
-      });
-    } catch (err) {
-      console.error('Error adding disability card:', err);
-      throw err;
-    }
-  }
 };
 
 export default api;

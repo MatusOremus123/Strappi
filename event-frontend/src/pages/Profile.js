@@ -4,7 +4,6 @@ import { apiService } from '../services/api';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isEditing, setIsEditing] = useState(false);
@@ -27,20 +26,24 @@ const Profile = () => {
       }
 
       try {
-        const user = JSON.parse(userData);
-        if (isMounted) setUser(user);
-
-        const allProfilesResponse = await apiService.getUserProfileSimple(user.id);
-        const userProfile = allProfilesResponse.data.data.find(profile => {
-          if (profile.users_permissions_user?.id === user.id) return true;
-          return profile.email_address?.toLowerCase() === user.email?.toLowerCase();
-        });
-
-        if (userProfile && isMounted) {
-          setProfile(userProfile);
+        // Use the current authenticated user endpoint
+        const userResponse = await apiService.getMe();
+        console.log('User response:', userResponse);
+        
+        if (userResponse.data && isMounted) {
+          setUser(userResponse.data);
+          // Update localStorage with fresh data
+          localStorage.setItem('user', JSON.stringify(userResponse.data));
         }
       } catch (err) {
         console.error('Error loading profile:', err);
+        // Fallback to localStorage data if API fails
+        try {
+          const user = JSON.parse(userData);
+          if (isMounted) setUser(user);
+        } catch (parseErr) {
+          console.error('Error parsing user data:', parseErr);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -64,10 +67,10 @@ const Profile = () => {
       });
     } else if (section === 'accessibility') {
       setFormData({
-        card_status: profile?.disability_card?.card_status || '',
-        issuing_card: profile?.disability_card?.issuing_card || '',
-        expiry_date: profile?.disability_card?.expiry_date ? 
-          new Date(profile.disability_card.expiry_date).toISOString().split('T')[0] : ''
+        card_status: user?.disability_card?.card_status || '',
+        issuing_card: user?.disability_card?.issuing_card || '',
+        expiry_date: user?.disability_card?.expiry_date ? 
+          new Date(user.disability_card.expiry_date).toISOString().split('T')[0] : ''
       });
     }
   };
@@ -97,40 +100,45 @@ const Profile = () => {
     setUpdating(true);
     setMessage({ type: '', text: '' });
 
+    console.log('Starting account update with data:', formData);
+
     try {
-      // Update user account information
       const updateData = {
         username: formData.username,
         email: formData.email
       };
 
-      let response;
-      try {
-        // Use the /users/me endpoint which works with authentication
-        response = await apiService.updateCurrentUser(updateData);
-      } catch (error) {
-        if (error.response?.status === 403 || error.response?.status === 405) {
-          console.log('Standard endpoint failed, trying direct user update...');
-          // Try the direct user endpoint
-          response = await apiService.updateUser(user.id, updateData);
-        } else {
-          throw error;
-        }
-      }
+      console.log('Sending update data:', updateData);
+
+      // Skip /users/me endpoint and go directly to the user ID endpoint
+      console.log('Using direct user update with ID:', user.id);
+      const response = await apiService.updateUser(user.id, updateData);
+      console.log('Direct user update response:', response);
       
-      if (response.data) {
-        // Update local storage with the response data
-        const updatedUser = { ...user, ...response.data };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setUser(updatedUser);
+      if (response?.data) {
+        console.log('Update successful, updating local state...');
+        
+        // Refresh user data from server to get the latest info
+        const refreshedUser = await apiService.getMe();
+        console.log('Refreshed user data:', refreshedUser);
+        
+        if (refreshedUser.data) {
+          localStorage.setItem('user', JSON.stringify(refreshedUser.data));
+          setUser(refreshedUser.data);
+        }
         
         setMessage({ type: 'success', text: 'Account information updated successfully!' });
         setIsEditing(false);
         setEditingSection(null);
         setFormData({});
+      } else {
+        console.log('No response data received');
+        setMessage({ type: 'error', text: 'Update failed - no response data' });
       }
     } catch (error) {
-      console.error('Error updating account:', error);
+      console.error('Account update error:', error);
+      console.error('Error response:', error.response);
+      
       let errorMessage = 'Failed to update account information';
       
       if (error.response?.status === 403) {
@@ -157,18 +165,24 @@ const Profile = () => {
     setUpdating(true);
     setMessage({ type: '', text: '' });
 
+    console.log('Starting accessibility update with data:', formData);
+    console.log('File upload:', fileUpload);
+
     try {
       let fileData = null;
       
       // Handle file upload if a new file is selected
       if (fileUpload) {
+        console.log('Uploading file...');
         const formDataFile = new FormData();
         formDataFile.append('files', fileUpload);
         
         try {
           const fileResponse = await apiService.uploadFile(formDataFile);
+          console.log('File upload response:', fileResponse);
           if (fileResponse.data && fileResponse.data.length > 0) {
             fileData = fileResponse.data[0];
+            console.log('File uploaded successfully:', fileData);
           }
         } catch (uploadError) {
           console.error('File upload failed:', uploadError);
@@ -178,85 +192,78 @@ const Profile = () => {
         }
       }
 
-      // Prepare disability card data
+      // Prepare disability card data as component
       const disabilityCardData = {
         card_status: formData.card_status,
         issuing_card: formData.issuing_card,
         expiry_date: formData.expiry_date || null
       };
 
-      // Only update file if a new one was uploaded
-      if (fileData) {
-        disabilityCardData.file = fileData.id;
+      // IMPORTANT: Include the existing ID for component updates
+      if (user?.disability_card?.id) {
+        disabilityCardData.id = user.disability_card.id;
       }
 
-      let response;
+      // Handle file data
+      if (fileData) {
+        console.log('Adding new file to disability card data');
+        disabilityCardData.file = fileData.id;
+      } else if (user?.disability_card?.file) {
+        console.log('Keeping existing file');
+        disabilityCardData.file = user.disability_card.file.id || user.disability_card.file;
+      }
+
+      console.log('Final disability card data:', disabilityCardData);
+
+      // Update user with disability card component
+      // For users-permissions, we send the data directly
+      const updateData = {
+        disability_card: disabilityCardData
+      };
+
+      console.log('Sending update data to API:', updateData);
+
       try {
-        if (profile?.disability_card?.id) {
-          // Update existing disability card
-          response = await apiService.updateDisabilityCard(profile.disability_card.id, disabilityCardData);
-        } else {
-          // Create new disability card
-          const newCardResponse = await apiService.createDisabilityCard(disabilityCardData);
-          if (newCardResponse.data?.data) {
-            // Update profile to link with new disability card
-            try {
-              response = await apiService.updateUserProfile(profile.id, {
-                disability_card: newCardResponse.data.data.id
-              });
-            } catch (profileUpdateError) {
-              console.error('Profile update failed:', profileUpdateError);
-              // Card was created but profile link failed
-              setMessage({ 
-                type: 'warning', 
-                text: 'Accessibility information saved but profile link failed. Please refresh the page.' 
-              });
-              setUpdating(false);
-              return;
-            }
+        const response = await apiService.updateUserWithDisabilityCard(user.id, updateData);
+        console.log('Disability card update response:', response);
+        
+        if (response?.data) {
+          console.log('Update successful, updating local state...');
+          
+          // Refresh user data from server
+          const refreshedUser = await apiService.getMe();
+          console.log('Refreshed user data:', refreshedUser);
+          
+          if (refreshedUser.data) {
+            localStorage.setItem('user', JSON.stringify(refreshedUser.data));
+            setUser(refreshedUser.data);
           }
+          
+          setMessage({ type: 'success', text: 'Accessibility information updated successfully!' });
+          setIsEditing(false);
+          setEditingSection(null);
+          setFileUpload(null);
+          setFormData({});
+        } else {
+          console.log('No response data received');
+          setMessage({ type: 'error', text: 'Update failed - no response data' });
         }
-      } catch (cardError) {
-        console.error('Disability card operation failed:', cardError);
+      } catch (updateError) {
+        console.error('User update failed:', updateError);
+        console.error('Update error response:', updateError.response);
+        
         let errorMessage = 'Failed to update accessibility information';
         
-        if (cardError.response?.status === 403) {
+        if (updateError.response?.status === 403) {
           errorMessage = 'Permission denied. You may not have permission to update accessibility information.';
-        } else if (cardError.response?.status === 400) {
-          errorMessage = cardError.response.data?.message || 'Invalid data provided.';
+        } else if (updateError.response?.status === 400) {
+          errorMessage = updateError.response.data?.error?.message || 'Invalid data provided.';
+        } else if (updateError.response?.data?.error?.message) {
+          errorMessage = updateError.response.data.error.message;
         }
         
         setMessage({ type: 'error', text: errorMessage });
-        setUpdating(false);
-        return;
       }
-
-      // Reload profile data
-      try {
-        const allProfilesResponse = await apiService.getUserProfileSimple(user.id);
-        const userProfile = allProfilesResponse.data.data.find(profile => {
-          if (profile.users_permissions_user?.id === user.id) return true;
-          return profile.email_address?.toLowerCase() === user.email?.toLowerCase();
-        });
-
-        if (userProfile) {
-          setProfile(userProfile);
-        }
-      } catch (reloadError) {
-        console.error('Profile reload failed:', reloadError);
-        // Update succeeded but reload failed
-        setMessage({ 
-          type: 'warning', 
-          text: 'Information updated successfully but page refresh failed. Please reload manually.' 
-        });
-        setUpdating(false);
-        return;
-      }
-
-      setMessage({ type: 'success', text: 'Accessibility information updated successfully!' });
-      setIsEditing(false);
-      setEditingSection(null);
-      setFileUpload(null);
       
     } catch (error) {
       console.error('Error updating accessibility info:', error);
@@ -265,9 +272,9 @@ const Profile = () => {
       if (error.response?.status === 403) {
         errorMessage = 'Permission denied. You may not have permission to update this information.';
       } else if (error.response?.status === 400) {
-        errorMessage = error.response.data?.message || 'Invalid data provided.';
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
+        errorMessage = error.response.data?.error?.message || 'Invalid data provided.';
+      } else if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
       }
       
       setMessage({ type: 'error', text: errorMessage });
@@ -356,7 +363,7 @@ const Profile = () => {
                 className="edit-button"
                 onClick={() => handleEditStart('accessibility')}
               >
-                {profile?.disability_card ? 'Edit' : 'Add'}
+                {user?.disability_card ? 'Edit' : 'Add'}
               </button>
             )}
           </div>
@@ -407,9 +414,9 @@ const Profile = () => {
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={handleFileChange}
                 />
-                {profile?.disability_card?.file && !fileUpload && (
+                {user?.disability_card?.file && !fileUpload && (
                   <p className="current-file">
-                    Current: {profile.disability_card.file.name || 'Document uploaded'}
+                    Current: {user.disability_card.file.name || 'Document uploaded'}
                   </p>
                 )}
                 {fileUpload && (
@@ -427,30 +434,30 @@ const Profile = () => {
             </form>
           ) : (
             <>
-              {profile?.disability_card ? (
+              {user?.disability_card ? (
                 <div className="profile-info">
                   <div className="disability-card-info">
                     <p><strong>Status:</strong> <span className="status-badge">
-                      {profile.disability_card.card_status || 'Not specified'}
+                      {user.disability_card.card_status || 'Not specified'}
                     </span></p>
 
-                    {profile.disability_card.issuing_card && (
-                      <p><strong>Issuing Authority:</strong> {profile.disability_card.issuing_card}</p>
+                    {user.disability_card.issuing_card && (
+                      <p><strong>Issuing Authority:</strong> {user.disability_card.issuing_card}</p>
                     )}
 
-                    {profile.disability_card.expiry_date && (
-                      <p><strong>Expiry Date:</strong> {new Date(profile.disability_card.expiry_date).toLocaleDateString()}</p>
+                    {user.disability_card.expiry_date && (
+                      <p><strong>Expiry Date:</strong> {new Date(user.disability_card.expiry_date).toLocaleDateString()}</p>
                     )}
 
-                    {profile.disability_card.file ? (
+                    {user.disability_card.file ? (
                       <div className="card-file-info">
                         <p><strong>Card Document:</strong> 
-                          <span className="file-uploaded">✅ {profile.disability_card.file.name || 'Document uploaded'}</span>
+                          <span className="file-uploaded">✅ {user.disability_card.file.name || 'Document uploaded'}</span>
                         </p>
-                        {profile.disability_card.file.url && (
+                        {user.disability_card.file.url && (
                           <p>
                             <a 
-                              href={`${process.env.REACT_APP_API_URL || 'http://localhost:1337'}${profile.disability_card.file.url}`} 
+                              href={`${process.env.REACT_APP_API_URL || 'http://localhost:1337'}${user.disability_card.file.url}`} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="file-link"
@@ -475,9 +482,9 @@ const Profile = () => {
                     <p className="no-info">No accessibility card on file.</p>
                     <p>If you have accessibility needs:</p>
                     <ul>
-                      <li>You can add them during event registration</li>
-                      <li>Or contact support to update your profile</li>
                       <li>Use the "Add" button above to add accessibility information</li>
+                      <li>You can also add them during event registration</li>
+                      <li>Contact support if you need assistance</li>
                     </ul>
                     <div className="accessibility-note">
                       <p><strong>Note:</strong> Accessibility information helps us provide appropriate accommodations for events you attend.</p>
