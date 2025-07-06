@@ -14,7 +14,7 @@ const EventDetail = () => {
     const fetchEvent = async () => {
       try {
         setLoading(true);
-        // Pass current language to API
+        // Pass current language to API with explicit location population
         const response = await apiService.getEvent(id, i18n.language);
         console.log('Event detail response:', response.data);
         setEvent(response.data.data);
@@ -29,6 +29,18 @@ const EventDetail = () => {
 
     fetchEvent();
   }, [id, i18n.language]); // Re-fetch when language changes
+
+  // Helper function to render rich text content
+  const renderRichText = (richTextArray) => {
+    if (!richTextArray || !Array.isArray(richTextArray)) return '';
+    
+    return richTextArray.map((paragraph, index) => {
+      if (paragraph.children && Array.isArray(paragraph.children)) {
+        return paragraph.children.map(child => child.text || '').join('');
+      }
+      return typeof paragraph === 'string' ? paragraph : '';
+    }).join(' ');
+  };
 
   const renderAccessibilityFeatures = (accessibilityFeatures) => {
     console.log('Raw accessibility features:', accessibilityFeatures);
@@ -51,16 +63,8 @@ const EventDetail = () => {
             // Handle the name field
             const featureName = feature?.name || `Feature ${index + 1}`;
             
-            // Handle rich text description field
-            let featureDescription = '';
-            if (feature?.description && Array.isArray(feature.description)) {
-              featureDescription = feature.description.map(paragraph => {
-                if (paragraph.children && Array.isArray(paragraph.children)) {
-                  return paragraph.children.map(child => child.text || '').join('');
-                }
-                return typeof paragraph === 'string' ? paragraph : '';
-              }).join(' ');
-            }
+            // Handle rich text description field using the helper function
+            const featureDescription = renderRichText(feature?.description);
             
             // Handle media icon field
             let featureIcon = '';
@@ -144,19 +148,107 @@ const EventDetail = () => {
           <p><strong>{t('end')}:</strong> {new Date(event.end_time).toLocaleString()}</p>
         </div>
 
-        {event.event_location && (
+        {/* FIXED: Changed from event.event_location to event.location */}
+        {event.location && (
           <div className="event-section">
             <h3>📍 {t('location')}</h3>
-            <p><strong>{t('venue')}:</strong> {event.event_location.name || 'Not specified'}</p>
-            {event.event_location.address && event.event_location.address.length > 0 && (
-              <p><strong>{t('address')}:</strong> {event.event_location.address[0]?.children[0]?.text}</p>
-            )}
-            {event.event_location.capacity && (
-              <p><strong>{t('capacity')}:</strong> {event.event_location.capacity} people</p>
-            )}
-            {event.event_location.website && (
-              <p><strong>{t('website')}:</strong> <a href={event.event_location.website} target="_blank" rel="noopener noreferrer">{event.event_location.website}</a></p>
-            )}
+            <div className="location-details">
+              <p><strong>{t('venue')}:</strong> {event.location.name || 'Not specified'}</p>
+              
+              {/* Full Address Display */}
+              {(event.location.street_address || event.location.city) && (
+                <div className="address-block">
+                  <p><strong>{t('address')}:</strong></p>
+                  <div className="address-content">
+                    {event.location.street_address && <p>{event.location.street_address}</p>}
+                    <p>
+                      {event.location.city}
+                      {event.location.state_province && `, ${event.location.state_province}`}
+                      {event.location.postal_code && ` ${event.location.postal_code}`}
+                    </p>
+                    {event.location.country && <p>{event.location.country}</p>}
+                  </div>
+                </div>
+              )}
+              
+              {/* Contact Information */}
+              <div className="contact-info">
+                {event.location.phone && (
+                  <p><strong>{t('phone')}:</strong> 
+                    <a href={`tel:${event.location.phone}`}>{event.location.phone}</a>
+                  </p>
+                )}
+                
+                {event.location.email && (
+                  <p><strong>{t('email')}:</strong> 
+                    <a href={`mailto:${event.location.email}`}>{event.location.email}</a>
+                  </p>
+                )}
+                
+                {event.location.website && (
+                  <p><strong>{t('website')}:</strong> 
+                    <a href={event.location.website} target="_blank" rel="noopener noreferrer">
+                      {event.location.website}
+                    </a>
+                  </p>
+                )}
+              </div>
+
+              {/* Venue Details */}
+              <div className="venue-details">
+                {event.location.capacity && (
+                  <p><strong>{t('capacity')}:</strong> {event.location.capacity} people</p>
+                )}
+                
+                {event.location.venue_type && (
+                  <p><strong>{t('venueType')}:</strong> {event.location.venue_type.replace('_', ' ')}</p>
+                )}
+                
+                {event.location.parking_available !== undefined && (
+                  <p><strong>{t('parking')}:</strong> {event.location.parking_available ? t('available') : t('notAvailable')}</p>
+                )}
+              </div>
+
+              {/* Location Description */}
+              {event.location.description && (
+                <div className="location-description">
+                  <p><strong>{t('locationDescription')}:</strong></p>
+                  <div className="description-content">
+                    {Array.isArray(event.location.description) ? 
+                      renderRichText(event.location.description) : 
+                      event.location.description
+                    }
+                  </div>
+                </div>
+              )}
+
+              {/* Public Transport */}
+              {event.location.public_transport_access && (
+                <div className="transport-info">
+                  <p><strong>{t('publicTransport')}:</strong></p>
+                  <div className="transport-content">
+                    {Array.isArray(event.location.public_transport_access) ? 
+                      renderRichText(event.location.public_transport_access) : 
+                      event.location.public_transport_access
+                    }
+                  </div>
+                </div>
+              )}
+
+              {/* Optional: Google Maps Link */}
+              {(event.location.latitude && event.location.longitude) && (
+                <div className="map-link">
+                  <a 
+                    href={`https://www.google.com/maps?q=${event.location.latitude},${event.location.longitude}`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="map-button"
+                  >
+                    📍 {t('viewOnMap')}
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -164,11 +256,7 @@ const EventDetail = () => {
           <h3>👥 {t('organizer')}</h3>
           {event.organizer ? (
             <>
-              {event.organizer.name ? (
-                <p><strong>Name:</strong> {event.organizer.name}</p>
-              ) : (
-                <p><strong>Name:</strong> Not specified</p>
-              )}
+              <p><strong>Name:</strong> {event.organizer.name || 'Not specified'}</p>
               {event.organizer.contact_email && (
                 <p><strong>Email:</strong> {event.organizer.contact_email}</p>
               )}
@@ -176,7 +264,11 @@ const EventDetail = () => {
                 <p><strong>Type:</strong> {event.organizer.type}</p>
               )}
               {event.organizer.website && (
-                <p><strong>{t('website')}:</strong> <a href={event.organizer.website} target="_blank" rel="noopener noreferrer">{event.organizer.website}</a></p>
+                <p><strong>{t('website')}:</strong> 
+                  <a href={event.organizer.website} target="_blank" rel="noopener noreferrer">
+                    {event.organizer.website}
+                  </a>
+                </p>
               )}
               {event.organizer.contact_Phone && (
                 <p><strong>Phone:</strong> {event.organizer.contact_Phone}</p>
@@ -192,6 +284,26 @@ const EventDetail = () => {
           <h3>♿ {t('accessibilityFeatures')}</h3>
           {renderAccessibilityFeatures(event.accessibility_features)}
         </div>
+
+        {/* Optional: Add media section if you want to display event images */}
+        {event.media && event.media.length > 0 && (
+          <div className="event-section">
+            <h3>📸 {t('media')}</h3>
+            <div className="event-media-grid">
+              {event.media.map((mediaItem, index) => (
+                <img 
+                  key={mediaItem.id || index}
+                  src={mediaItem.url.startsWith('/') ? 
+                    `${process.env.REACT_APP_API_URL || 'http://localhost:1337'}${mediaItem.url}` : 
+                    mediaItem.url
+                  }
+                  alt={mediaItem.alternativeText || `Event media ${index + 1}`}
+                  className="event-media-image"
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

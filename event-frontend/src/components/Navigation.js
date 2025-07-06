@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
 
 const Navigation = () => {
+  const { t } = useTranslation();
   const [user, setUser] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -60,7 +62,7 @@ const Navigation = () => {
     <nav className="navigation">
       <div className="nav-container">
         <Link to="/" className="nav-brand" onClick={closeMobileMenu}>
-          🎭 Event Management
+          🎭 {t('appName')}
         </Link>
         
         {/* Mobile hamburger button */}
@@ -77,13 +79,13 @@ const Navigation = () => {
         </button>
         
         <div className={`nav-links ${isMobileMenuOpen ? 'mobile-menu-open' : ''}`}>
-          <Link to="/events" onClick={closeMobileMenu}>Events</Link>
+          <Link to="/events" onClick={closeMobileMenu}>{t('events')}</Link>
           
           {user ? (
             // Logged in navigation
             <>
               <div className="nav-user-info">
-                <span className="nav-welcome">Welcome, {user.username}</span>
+                <span className="nav-welcome">{t('welcome')}, {user.username}</span>
                 <span className="nav-role">{user.role?.name || 'User'}</span>
               </div>
               
@@ -100,16 +102,16 @@ const Navigation = () => {
                 </Link>
               )}
               
-              <Link to="/profile" onClick={closeMobileMenu}>👤 My Profile</Link>
+              <Link to="/profile" onClick={closeMobileMenu}>👤 {t('myProfile')}</Link>
               <button onClick={handleLogout} className="nav-logout">
-                Logout
+                {t('logout')}
               </button>
             </>
           ) : (
             // Not logged in navigation
             <>
-              <Link to="/login" onClick={closeMobileMenu}>Sign In</Link>
-              <Link to="/register" onClick={closeMobileMenu}>Register</Link>
+              <Link to="/login" onClick={closeMobileMenu}>{t('login')}</Link>
+              <Link to="/register" onClick={closeMobileMenu}>{t('register')}</Link>
             </>
           )}
           
