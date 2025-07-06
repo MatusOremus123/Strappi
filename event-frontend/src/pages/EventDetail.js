@@ -254,26 +254,32 @@ const EventDetail = () => {
 
         <div className="event-section">
           <h3>👥 {t('organizer')}</h3>
-          {event.organizer ? (
-            <>
-              <p><strong>Name:</strong> {event.organizer.name || 'Not specified'}</p>
-              {event.organizer.contact_email && (
-                <p><strong>Email:</strong> {event.organizer.contact_email}</p>
-              )}
-              {event.organizer.type && (
-                <p><strong>Type:</strong> {event.organizer.type}</p>
-              )}
-              {event.organizer.website && (
-                <p><strong>{t('website')}:</strong> 
-                  <a href={event.organizer.website} target="_blank" rel="noopener noreferrer">
-                    {event.organizer.website}
-                  </a>
-                </p>
-              )}
-              {event.organizer.contact_Phone && (
-                <p><strong>Phone:</strong> {event.organizer.contact_Phone}</p>
-              )}
-            </>
+          {event.organizers && event.organizers.length > 0 ? (
+            <div className="organizers-list">
+              {event.organizers.map((organizer, index) => (
+                <div key={organizer.id || index} className="organizer-info">
+                  {event.organizers.length > 1 && <h4>Organizer {index + 1}</h4>}
+                  <p><strong>Name:</strong> {organizer.name || 'Not specified'}</p>
+                  {organizer.contact_email && (
+                    <p><strong>Email:</strong> {organizer.contact_email}</p>
+                  )}
+                  {organizer.type && (
+                    <p><strong>Type:</strong> {organizer.type}</p>
+                  )}
+                  {organizer.website && (
+                    <p><strong>{t('website')}:</strong> 
+                      <a href={organizer.website} target="_blank" rel="noopener noreferrer">
+                        {organizer.website}
+                      </a>
+                    </p>
+                  )}
+                  {organizer.contact_Phone && (
+                    <p><strong>Phone:</strong> {organizer.contact_Phone}</p>
+                  )}
+                  {index < event.organizers.length - 1 && <hr className="organizer-separator" />}
+                </div>
+              ))}
+            </div>
           ) : (
             <p>No organizer information available</p>
           )}

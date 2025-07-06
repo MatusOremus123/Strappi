@@ -103,7 +103,12 @@ const Register = () => {
       console.log('Registration response:', authResponse.data);
       
       const userId = authResponse.data.user.id;
+      const userToken = authResponse.data.jwt;
       console.log('User ID:', userId);
+
+      // Store the token temporarily for the update operations
+      const originalToken = localStorage.getItem('authToken');
+      localStorage.setItem('authToken', userToken);
 
       // Step 2: Try to get roles and assign Event Attendee
       try {
@@ -130,7 +135,9 @@ const Register = () => {
         // Continue anyway - user still has basic auth
       }
 
-      // Step 3: Add disability card information directly to user if provided
+      let disabilityCardSaved = false;
+
+      // Step 3: Add disability card information if provided
       if (formData.hasDisability) {
         try {
           console.log('Adding disability card information to user...');
@@ -142,7 +149,7 @@ const Register = () => {
             console.log('File uploaded:', uploadedFile);
           }
 
-          // Prepare disability card data as direct fields
+          // Prepare disability card data as direct fields (matching profile structure)
           const disabilityUpdateData = {
             disability_card_status: formData.disabilityCardStatus || 'Active',
             ...(formData.issuingCard && { disability_issuing_authority: formData.issuingCard }),
@@ -152,24 +159,79 @@ const Register = () => {
 
           console.log('Disability card data to save:', disabilityUpdateData);
 
-          // Update the user with disability card information
-          console.log('Updating user with disability card data:', disabilityUpdateData);
-          const response = await apiService.updateUser(userId, disabilityUpdateData);
-          console.log('User updated with disability card:', response.data);
+          // Try different update methods (same as profile logic)
+          try {
+            console.log('Attempting updateUser method...');
+            const response = await apiService.updateUser(userId, disabilityUpdateData);
+            console.log('User updated with disability card via updateUser:', response.data);
+            disabilityCardSaved = true;
+          } catch (updateUserError) {
+            console.error('updateUser failed, trying updateCurrentUser:', updateUserError);
+            
+            try {
+              console.log('Attempting updateCurrentUser method...');
+              const response = await apiService.updateCurrentUser(disabilityUpdateData);
+              console.log('User updated with disability card via updateCurrentUser:', response.data);
+              disabilityCardSaved = true;
+            } catch (updateCurrentUserError) {
+              console.error('updateCurrentUser also failed, trying put to /users/me:', updateCurrentUserError);
+              
+              try {
+                // Direct API call as last resort
+                const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:1337'}/api/users/me`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userToken}`
+                  },
+                  body: JSON.stringify(disabilityUpdateData)
+                });
+                
+                if (response.ok) {
+                  const data = await response.json();
+                  console.log('User updated via direct API call:', data);
+                  disabilityCardSaved = true;
+                } else {
+                  throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+              } catch (directApiError) {
+                console.error('Direct API call also failed:', directApiError);
+                throw directApiError;
+              }
+            }
+          }
           
         } catch (disabilityError) {
           console.error('Failed to save disability card information:', disabilityError);
           console.error('Disability error details:', disabilityError.response?.data);
+          
           // Don't fail the whole registration - user is still created
-          console.log('Registration will continue without disability card info');
+          console.log('Registration will continue, but disability card was not saved');
+          disabilityCardSaved = false;
+        }
+      }
+
+      // Restore original token
+      if (originalToken) {
+        localStorage.setItem('authToken', originalToken);
+      } else {
+        localStorage.removeItem('authToken');
+      }
+
+      // Success message based on what was saved
+      let successMessage = 'Registration successful! You can now log in.';
+      
+      if (formData.hasDisability) {
+        if (disabilityCardSaved) {
+          successMessage = 'Registration successful! Your accessibility information has been saved. You can now log in and manage your event participation.';
+        } else {
+          successMessage = 'Registration successful! However, there was an issue saving your disability card information. You can add it from your profile page after logging in.';
         }
       }
 
       setMessage({ 
-        type: 'success', 
-        text: formData.hasDisability 
-          ? 'Registration successful! Your accessibility information has been saved. You can now log in and manage your event participation.'
-          : 'Registration successful! You can now log in and manage your event participation.'
+        type: disabilityCardSaved || !formData.hasDisability ? 'success' : 'warning', 
+        text: successMessage
       });
       
       // Reset form
@@ -488,6 +550,17 @@ const Register = () => {
           <p>Already have an account? <Link to="/login">Sign in here</Link></p>
         </div>
       </div>
+
+      <style jsx>{`
+        .message.warning {
+          background-color: #fef3c7;
+          color: #92400e;
+          border: 1px solid #fbbf24;
+          padding: 1rem;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+        }
+      `}</style>
     </div>
   );
 };

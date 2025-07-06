@@ -47,6 +47,10 @@ const Navigation = () => {
     localStorage.removeItem('user');
     setUser(null);
     setIsMobileMenuOpen(false);
+    
+    // Dispatch custom event for other components
+    window.dispatchEvent(new Event('auth-changed'));
+    
     navigate('/');
   };
 

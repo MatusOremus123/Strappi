@@ -101,11 +101,11 @@
       "target": "api::ticket-type.ticket-type",
       "inversedBy": "event"
     },
-    "organizer": {
+    "organizers": {
       "type": "relation",
-      "relation": "oneToOne",
+      "relation": "manyToMany",
       "target": "api::organizer.organizer",
-      "inversedBy": "event"
+      "inversedBy": "events"
     },
     "accessibility_features": {
       "type": "relation",

@@ -67,9 +67,10 @@ const Events = () => {
               {event.event_type && (
                 <span className="event-type">{event.event_type}</span>
               )}
-              {event.organizer && (
+              {event.organizers && event.organizers.length > 0 && (
                 <p className="event-organizer">
-                  👥 {event.organizer.name}
+                  👥 {event.organizers[0].name}
+                  {event.organizers.length > 1 && ` +${event.organizers.length - 1} more`}
                 </p>
               )}
               {event.event_location && (

@@ -43,6 +43,9 @@ const Login = () => {
         localStorage.setItem('authToken', jwt);
         localStorage.setItem('user', JSON.stringify(user));
         
+        // Dispatch custom event for Navigation component
+        window.dispatchEvent(new Event('auth-changed'));
+        
         setMessage({ 
           type: 'success', 
           text: 'Login successful! Redirecting...' 

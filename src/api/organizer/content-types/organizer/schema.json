@@ -79,11 +79,6 @@
         "audios"
       ]
     },
-    "events": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::event.event"
-    },
     "password": {
       "type": "string",
       "pluginOptions": {
@@ -101,11 +96,11 @@
         }
       }
     },
-    "event": {
+    "events": {
       "type": "relation",
-      "relation": "oneToOne",
+      "relation": "manyToMany",
       "target": "api::event.event",
-      "mappedBy": "organizer"
+      "mappedBy": "organizers"
     }
   }
 }

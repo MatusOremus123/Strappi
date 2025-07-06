@@ -577,8 +577,8 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
           localized: true;
         };
       }>;
-    organizer: Schema.Attribute.Relation<
-      'oneToOne',
+    organizers: Schema.Attribute.Relation<
+      'manyToMany',
       'api::organizer.organizer'
     >;
     publishedAt: Schema.Attribute.DateTime;
@@ -767,8 +767,7 @@ export interface ApiOrganizerOrganizer extends Struct.CollectionTypeSchema {
           localized: true;
         };
       }>;
-    event: Schema.Attribute.Relation<'oneToOne', 'api::event.event'>;
-    events: Schema.Attribute.Relation<'oneToMany', 'api::event.event'>;
+    events: Schema.Attribute.Relation<'manyToMany', 'api::event.event'>;
     locale: Schema.Attribute.String;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
