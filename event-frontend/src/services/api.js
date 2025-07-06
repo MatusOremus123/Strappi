@@ -19,12 +19,12 @@ api.interceptors.request.use((config) => {
 });
 
 export const apiService = {
-  // Events
-  getEvents: () => 
-    api.get(`/events?populate=*`),
+  // Events with locale support
+  getEvents: (locale = 'en') => 
+    api.get(`/events?populate=*&locale=${locale}`),
   
-  getEvent: (id) => 
-    api.get(`/events/${id}?populate=*`),
+  getEvent: (id, locale = 'en') => 
+    api.get(`/events/${id}?populate=*&locale=${locale}`),
   
   // Authentication
   register: (userData) => 

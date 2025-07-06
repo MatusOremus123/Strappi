@@ -48,9 +48,9 @@ const Login = () => {
           text: 'Login successful! Redirecting...' 
         });
         
-        // Simple approach: just use window.location to refresh everything
+        // Use React Router navigate instead of window.location
         setTimeout(() => {
-          window.location.href = '/events';
+          navigate('/events');
         }, 1000);
       } else {
         throw new Error('Invalid login response - missing token or user data');

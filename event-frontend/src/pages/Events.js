@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 
 const Events = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,8 +14,8 @@ const Events = () => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
-        // Remove any locale parameter for now
-        const response = await apiService.getEvents();
+        // Pass current language to API
+        const response = await apiService.getEvents(i18n.language);
         console.log('Events response:', response.data);
         setEvents(response.data.data);
         setError(null);
@@ -28,7 +28,7 @@ const Events = () => {
     };
 
     fetchEvents();
-  }, []);
+  }, [i18n.language]); // Re-fetch when language changes
 
   const filteredEvents = events.filter(event =>
     event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -80,11 +80,11 @@ const Events = () => {
               <p className="event-description">
                 {event.description && event.description.length > 0 
                   ? event.description[0]?.children[0]?.text?.substring(0, 100) + '...'
-                  : 'No description available'
+                  : t('noDescription')
                 }
               </p>
               <Link to={`/events/${event.documentId}`} className="view-details-btn">
-                View Details
+                {t('viewDetails')}
               </Link>
             </div>
           ))}

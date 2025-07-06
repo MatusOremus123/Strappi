@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 
 const EventDetail = () => {
   const { id } = useParams();
+  const { t, i18n } = useTranslation();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,7 +14,8 @@ const EventDetail = () => {
     const fetchEvent = async () => {
       try {
         setLoading(true);
-        const response = await apiService.getEvent(id);
+        // Pass current language to API
+        const response = await apiService.getEvent(id, i18n.language);
         console.log('Event detail response:', response.data);
         setEvent(response.data.data);
         setError(null);
@@ -25,7 +28,7 @@ const EventDetail = () => {
     };
 
     fetchEvent();
-  }, [id]);
+  }, [id, i18n.language]); // Re-fetch when language changes
 
   const renderAccessibilityFeatures = (accessibilityFeatures) => {
     console.log('Raw accessibility features:', accessibilityFeatures);
@@ -33,8 +36,8 @@ const EventDetail = () => {
     if (!accessibilityFeatures || accessibilityFeatures.length === 0) {
       return (
         <div className="accessibility-info">
-          <p>No specific accessibility features listed for this event.</p>
-          <p>For accessibility inquiries, please contact the event organizer.</p>
+          <p>{t('noAccessibilityFeatures')}</p>
+          <p>{t('accessibilityInquiries')}</p>
         </div>
       );
     }
@@ -99,13 +102,13 @@ const EventDetail = () => {
     );
   };
 
-  if (loading) return <div className="loading">Loading event details...</div>;
-  if (error) return <div className="error">Error: {error}</div>;
+  if (loading) return <div className="loading">{t('loading')}</div>;
+  if (error) return <div className="error">{t('error')}: {error}</div>;
   if (!event) return <div className="error">Event not found</div>;
 
   return (
     <div className="event-detail">
-      <Link to="/events" className="back-link">← Back to Events</Link>
+      <Link to="/events" className="back-link">← {t('backToEvents')}</Link>
       
       <div className="event-header">
         <h1>{event.name || 'Untitled Event'}</h1>
@@ -116,7 +119,7 @@ const EventDetail = () => {
 
       <div className="event-info-container">
         <div className="event-section">
-          <h3>📝 Description</h3>
+          <h3>📝 {t('description')}</h3>
           <div className="event-description">
             {event.description && event.description.length > 0 ? (
               event.description.map((paragraph, index) => (
@@ -130,35 +133,35 @@ const EventDetail = () => {
                 </p>
               ))
             ) : (
-              <p>No description available</p>
+              <p>{t('noDescription')}</p>
             )}
           </div>
         </div>
 
         <div className="event-section">
-          <h3>📅 Date & Time</h3>
-          <p><strong>Start:</strong> {new Date(event.start_time).toLocaleString()}</p>
-          <p><strong>End:</strong> {new Date(event.end_time).toLocaleString()}</p>
+          <h3>📅 {t('dateTime')}</h3>
+          <p><strong>{t('start')}:</strong> {new Date(event.start_time).toLocaleString()}</p>
+          <p><strong>{t('end')}:</strong> {new Date(event.end_time).toLocaleString()}</p>
         </div>
 
         {event.event_location && (
           <div className="event-section">
-            <h3>📍 Location</h3>
-            <p><strong>Venue:</strong> {event.event_location.name || 'Not specified'}</p>
+            <h3>📍 {t('location')}</h3>
+            <p><strong>{t('venue')}:</strong> {event.event_location.name || 'Not specified'}</p>
             {event.event_location.address && event.event_location.address.length > 0 && (
-              <p><strong>Address:</strong> {event.event_location.address[0]?.children[0]?.text}</p>
+              <p><strong>{t('address')}:</strong> {event.event_location.address[0]?.children[0]?.text}</p>
             )}
             {event.event_location.capacity && (
-              <p><strong>Capacity:</strong> {event.event_location.capacity} people</p>
+              <p><strong>{t('capacity')}:</strong> {event.event_location.capacity} people</p>
             )}
             {event.event_location.website && (
-              <p><strong>Website:</strong> <a href={event.event_location.website} target="_blank" rel="noopener noreferrer">{event.event_location.website}</a></p>
+              <p><strong>{t('website')}:</strong> <a href={event.event_location.website} target="_blank" rel="noopener noreferrer">{event.event_location.website}</a></p>
             )}
           </div>
         )}
 
         <div className="event-section">
-          <h3>👥 Organizer</h3>
+          <h3>👥 {t('organizer')}</h3>
           {event.organizer ? (
             <>
               {event.organizer.name ? (
@@ -173,7 +176,7 @@ const EventDetail = () => {
                 <p><strong>Type:</strong> {event.organizer.type}</p>
               )}
               {event.organizer.website && (
-                <p><strong>Website:</strong> <a href={event.organizer.website} target="_blank" rel="noopener noreferrer">{event.organizer.website}</a></p>
+                <p><strong>{t('website')}:</strong> <a href={event.organizer.website} target="_blank" rel="noopener noreferrer">{event.organizer.website}</a></p>
               )}
               {event.organizer.contact_Phone && (
                 <p><strong>Phone:</strong> {event.organizer.contact_Phone}</p>
@@ -186,7 +189,7 @@ const EventDetail = () => {
 
         {/* Accessibility Features Section */}
         <div className="event-section">
-          <h3>♿ Accessibility Features</h3>
+          <h3>♿ {t('accessibilityFeatures')}</h3>
           {renderAccessibilityFeatures(event.accessibility_features)}
         </div>
       </div>

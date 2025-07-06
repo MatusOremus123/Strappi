@@ -5,7 +5,14 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 const resources = {
   en: {
     translation: {
-      "welcome": "Welcome to Event Management",
+      
+      "appName": "Event Management",
+      "welcome": "Welcome",
+      "myProfile": "My Profile",
+      "logout": "Logout",
+      "login": "Login",
+      
+      
       "events": "Events",
       "eventDetails": "Event Details",
       "register": "Register",
@@ -32,12 +39,34 @@ const resources = {
       "joinCommunity": "Join Community",
       "noEventsMatch": "No events match your search.",
       "registerDescription": "Register for an account to manage your event participation",
-      "creatingAccount": "Creating Account..."
+      "creatingAccount": "Creating Account...",
+      
+      
+      "viewDetails": "View Details",
+      "noDescription": "No description available",
+      "backToEvents": "Back to Events",
+      "dateTime": "Date & Time",
+      "start": "Start",
+      "end": "End",
+      "venue": "Venue",
+      "address": "Address",
+      "capacity": "Capacity",
+      "website": "Website",
+      "accessibilityFeatures": "Accessibility Features",
+      "noAccessibilityFeatures": "No specific accessibility features listed for this event.",
+      "accessibilityInquiries": "For accessibility inquiries, please contact the event organizer."
     }
   },
   de: {
     translation: {
-      "welcome": "Willkommen zum Event Management",
+      
+      "appName": "Event Management",
+      "welcome": "Willkommen",
+      "myProfile": "Mein Profil",
+      "logout": "Abmelden",
+      "login": "Anmelden",
+      
+      
       "events": "Veranstaltungen",
       "eventDetails": "Veranstaltungsdetails",
       "register": "Registrieren",
@@ -53,7 +82,7 @@ const resources = {
       "organizer": "Veranstalter",
       "description": "Beschreibung",
       "uploadDocument": "Dokument hochladen",
-      "searchEvents": "Events suchen...",
+      "searchEvents": "Veranstaltungen suchen...",
       "noEvents": "Keine Veranstaltungen gefunden",
       "loading": "Lädt...",
       "error": "Ein Fehler ist aufgetreten",
@@ -64,7 +93,22 @@ const resources = {
       "joinCommunity": "Community beitreten",
       "noEventsMatch": "Keine Veranstaltungen entsprechen Ihrer Suche.",
       "registerDescription": "Registrieren Sie sich für ein Konto, um Ihre Veranstaltungsteilnahme zu verwalten",
-      "creatingAccount": "Konto wird erstellt..."
+      "creatingAccount": "Konto wird erstellt...",
+      
+      
+      "viewDetails": "Details anzeigen",
+      "noDescription": "Keine Beschreibung verfügbar",
+      "backToEvents": "Zurück zu Veranstaltungen",
+      "dateTime": "Datum & Uhrzeit",
+      "start": "Beginn",
+      "end": "Ende",
+      "venue": "Veranstaltungsort",
+      "address": "Adresse",
+      "capacity": "Kapazität",
+      "website": "Webseite",
+      "accessibilityFeatures": "Barrierefreiheitsmerkmale",
+      "noAccessibilityFeatures": "Für diese Veranstaltung sind keine spezifischen Barrierefreiheitsmerkmale aufgeführt.",
+      "accessibilityInquiries": "Bei Fragen zur Barrierefreiheit wenden Sie sich bitte an den Veranstalter."
     }
   }
 };
