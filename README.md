@@ -1,61 +1,48 @@
-# 🚀 Getting started with Strapi
+Getting Started
+Prerequisites
 
-Strapi comes with a full featured [Command Line Interface](https://docs.strapi.io/dev-docs/cli) (CLI) which lets you scaffold and manage your project in seconds.
+Node.js (v16 or higher)
+npm or yarn
+Git
 
-### `develop`
+1. Clone the Repository
+bashgit clone [your-repository-url]
+cd [project-directory]
+2. Backend Setup (Strapi)
+bash# Navigate to backend directory
+cd backend
 
-Start your Strapi application with autoReload enabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-develop)
+# Install dependencies
+npm install
 
-```
+# Start the development server
 npm run develop
-# or
-yarn develop
-```
+The Strapi admin panel will be available at: http://localhost:1337/admin
+3. Frontend Setup (React)
+bash# Open a new terminal window/tab
+# Navigate to frontend directory
+cd event-frontend
 
-### `start`
+# Install dependencies
+npm install
 
-Start your Strapi application with autoReload disabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-start)
+# Install additional required dependency
+npm install lucide-react --legacy-peer-deps
 
-```
-npm run start
-# or
-yarn start
-```
+# Start the development server
+npm start
+The React application will be available at: http://localhost:3000
+🔑 Default Credentials
+Strapi Admin Panel (http://localhost:1337/admin)
+First-time setup: When you first access the admin panel, you'll need to create an admin account:
 
-### `build`
+Email: matus.oremus@gmail.com
+Password: Mojemeno1
 
-Build your admin panel. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-build)
 
-```
-npm run build
-# or
-yarn build
-```
+Frontend Application (http://localhost:3000)
+Test User Account:
 
-## ⚙️ Deployment
-
-Strapi gives you many possible deployment options for your project including [Strapi Cloud](https://cloud.strapi.io). Browse the [deployment section of the documentation](https://docs.strapi.io/dev-docs/deployment) to find the best solution for your use case.
-
-```
-yarn strapi deploy
-```
-
-## 📚 Learn more
-
-- [Resource center](https://strapi.io/resource-center) - Strapi resource center.
-- [Strapi documentation](https://docs.strapi.io) - Official Strapi documentation.
-- [Strapi tutorials](https://strapi.io/tutorials) - List of tutorials made by the core team and the community.
-- [Strapi blog](https://strapi.io/blog) - Official Strapi blog containing articles made by the Strapi team and the community.
-- [Changelog](https://strapi.io/changelog) - Find out about the Strapi product updates, new features and general improvements.
-
-Feel free to check out the [Strapi GitHub repository](https://github.com/strapi/strapi). Your feedback and contributions are welcome!
-
-## ✨ Community
-
-- [Discord](https://discord.strapi.io) - Come chat with the Strapi community including the core team.
-- [Forum](https://forum.strapi.io/) - Place to discuss, ask questions and find answers, show your Strapi project and get feedback or just talk with other Community members.
-- [Awesome Strapi](https://github.com/strapi/awesome-strapi) - A curated list of awesome things related to Strapi.
-
----
-
-<sub>🤫 Psst! [Strapi is hiring](https://strapi.io/careers).</sub>
+Username: testuser
+Email: test@example.com
+Password: testpassword123
