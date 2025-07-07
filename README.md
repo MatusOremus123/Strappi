@@ -49,9 +49,4 @@ Email: hento@gmail.com
 Username: Hento
 Password: 123456
 
-👤 Frontend Test Accounts
-URL: http://localhost:3000
-Regular User Account
-FieldValueUsernametestuserEmailtest@example.comPasswordtestpassword123
-Admin Account
-FieldValueUsernameadminEmailadmin@test.comPasswordadminpassword123
+
