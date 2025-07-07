@@ -1,14 +1,16 @@
-Getting Started
-Prerequisites
+
+ Quick Start Guide
+ Prerequisites
 
 Node.js (v16 or higher)
 npm or yarn
 Git
 
-1. Clone the Repository
-bashgit clone [your-repository-url]
+🔧 Installation Steps
+
 cd [project-directory]
-2. Backend Setup (Strapi)
+
+Backend Setup (Strapi)
 bash# Navigate to backend directory
 cd backend
 
@@ -17,8 +19,9 @@ npm install
 
 # Start the development server
 npm run develop
-The Strapi admin panel will be available at: http://localhost:1337/admin
-3. Frontend Setup (React)
+🌐 Strapi Admin Panel: http://localhost:1337/admin
+
+3️⃣ Frontend Setup (React)
 bash# Open a new terminal window/tab
 # Navigate to frontend directory
 cd event-frontend
@@ -31,18 +34,24 @@ npm install lucide-react --legacy-peer-deps
 
 # Start the development server
 npm start
-The React application will be available at: http://localhost:3000
-🔑 Default Credentials
-Strapi Admin Panel (http://localhost:1337/admin)
-First-time setup: When you first access the admin panel, you'll need to create an admin account:
+🌐 React Application: http://localhost:3000
 
-Email: matus.oremus@gmail.com
-Password: Mojemeno1
+🔐 Default Credentials
+🔧 Strapi Admin Panel
+URL: http://localhost:1337/admin
+Admin credentials:
+Email: Admin@gmail.com
+Username: Admin
+password: Admin123
 
+Frontend Example user:
+Email: hento@gmail.com
+Username: Hento
+Password: 123456
 
-Frontend Application (http://localhost:3000)
-Test User Account:
-
-Username: testuser
-Email: test@example.com
-Password: testpassword123
+👤 Frontend Test Accounts
+URL: http://localhost:3000
+Regular User Account
+FieldValueUsernametestuserEmailtest@example.comPasswordtestpassword123
+Admin Account
+FieldValueUsernameadminEmailadmin@test.comPasswordadminpassword123
